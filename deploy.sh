@@ -2,7 +2,7 @@
 set -e
 
 cd /proyecto/Credimas/
-git pull origin main
+git pull origin master
 
 sudo bash -c '
   export NVM_DIR="/root/.nvm"
