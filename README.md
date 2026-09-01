@@ -32,7 +32,7 @@ Producción Linux + PM2 (sin Docker): [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## App Android
 
-Abre la carpeta `android/` en Android Studio. Para el emulador, la URL por defecto es `http://10.0.2.2:3700` (localhost de tu PC). En un dispositivo físico, cambia `BASE_URL` en `app/build.gradle.kts` a la IP de tu máquina en la LAN.
+Abre la carpeta `android/` en Android Studio. La API por defecto es `http://34.237.18.97:3700/`. Para desarrollo local, cambia `BASE_URL` en `app/build.gradle.kts` a `http://10.0.2.2:3700/` (emulador) o a la IP de tu PC en la LAN.
 
 ## Reglas de crédito
 

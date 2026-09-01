@@ -11,7 +11,8 @@ sudo bash -c '
 
   cd /proyecto/Credimas/backend
   npm install --legacy-peer-deps
-
+  npx prisma generate
+  npx prisma migrate deploy
   npm run build
 
   pm2 restart 8

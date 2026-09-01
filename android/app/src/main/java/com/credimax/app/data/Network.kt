@@ -68,7 +68,12 @@ class AppContainer(context: Context) {
 
 fun parseApiError(gson: Gson, raw: String?): String {
     return try {
-        gson.fromJson(raw, ApiError::class.java)?.error ?: "Error de red"
+        val parsed = gson.fromJson(raw, ApiError::class.java)
+        val base = parsed?.error ?: "Error de red"
+        val detail = raw?.let {
+            if (it.contains("\"detail\"")) it.take(240) else null
+        }
+        if (detail != null) "$base | $detail" else base
     } catch (_: Exception) {
         raw?.take(180) ?: "Error de red"
     }

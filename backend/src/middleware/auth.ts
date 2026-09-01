@@ -1,8 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-const JWT_SECRET = process.env.JWT_SECRET ?? "credimax-dev-secret-change-me";
-
 export type AuthUser = { id: string; email: string; name: string };
 
 declare global {
@@ -14,8 +12,10 @@ declare global {
 }
 
 export function signToken(user: AuthUser): string {
-  return jwt.sign(user, JWT_SECRET, {
-    expiresIn: (process.env.JWT_EXPIRES_IN ?? "7d") as jwt.SignOptions["expiresIn"],
+  const secret = process.env.JWT_SECRET?.trim() || "credimax-dev-secret-change-me";
+  const expiresIn = process.env.JWT_EXPIRES_IN?.trim() || "7d";
+  return jwt.sign(user, secret, {
+    expiresIn: expiresIn as jwt.SignOptions["expiresIn"],
   });
 }
 
@@ -26,8 +26,9 @@ export function auth(req: Request, res: Response, next: NextFunction): void {
     res.status(401).json({ error: "No autorizado" });
     return;
   }
+  const secret = process.env.JWT_SECRET?.trim() || "credimax-dev-secret-change-me";
   try {
-    req.user = jwt.verify(token, JWT_SECRET) as AuthUser;
+    req.user = jwt.verify(token, secret) as AuthUser;
     next();
   } catch {
     res.status(401).json({ error: "Token inválido" });

@@ -3,7 +3,7 @@ module.exports = {
   apps: [
     {
       name: "credimax-api",
-      cwd: "/proyecto/credimax/backend",
+      cwd: "/proyecto/Credimas/backend",
       script: "dist/index.js",
       instances: 1,
       exec_mode: "fork",

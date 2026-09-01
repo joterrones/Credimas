@@ -93,7 +93,7 @@ RDS exige TLS: `?sslmode=require` en `DATABASE_URL`. El security group de AWS de
 
 - `applicationId`: `com.credimax.app`
 - minSdk 26, compile/target 35
-- `BuildConfig.BASE_URL` default `http://10.0.2.2:3700/` (emulador → localhost del host)
+- `BuildConfig.BASE_URL` default `http://34.237.18.97:3700/`
 - Dispositivo físico: cambiar `BASE_URL` en `app/build.gradle.kts` a la IP LAN
 - Cleartext permitido (`network_security_config.xml`) para HTTP local
 - Token en DataStore (`TokenStore`); interceptor OkHttp agrega `Authorization`
