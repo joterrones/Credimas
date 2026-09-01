@@ -1,0 +1,144 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentType {
+  DNI
+  CE
+}
+
+enum ClientStatus {
+  activo
+  inactivo
+}
+
+enum QuoteStatus {
+  borrador
+  aprobado
+  rechazado
+  convertido
+}
+
+enum LoanStatus {
+  activo
+  al_dia
+  atrasado
+  pagado
+}
+
+enum InstallmentStatus {
+  pendiente
+  atrasada
+  pagada
+  pagada_con_atraso
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Client {
+  id            String       @id @default(uuid())
+  codigo        Int          @unique @default(autoincrement())
+  nombre        String
+  direccion     String
+  telefono      String
+  tipoDocumento DocumentType
+  nroDocumento  String       @unique
+  estado        ClientStatus @default(activo)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  quotes        Quote[]
+  loans         Loan[]
+}
+
+model Quote {
+  id         String      @id @default(uuid())
+  clientId   String
+  client     Client      @relation(fields: [clientId], references: [id])
+  capital    Decimal     @db.Decimal(12, 2)
+  interesPct Decimal     @db.Decimal(6, 2)
+  semanas    Int
+  fechaInicio DateTime    @default(now()) @db.Date
+  notas      String?
+  estado     QuoteStatus @default(borrador)
+  loan       Loan?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([clientId])
+  @@index([estado])
+}
+
+model Loan {
+  id           String        @id @default(uuid())
+  clientId     String
+  client       Client        @relation(fields: [clientId], references: [id])
+  quoteId      String?       @unique
+  quote        Quote?        @relation(fields: [quoteId], references: [id])
+  capital      Decimal       @db.Decimal(12, 2)
+  interesPct   Decimal       @db.Decimal(6, 2)
+  semanas      Int
+  totalPagar   Decimal       @db.Decimal(12, 2)
+  tasaSemanal  Decimal       @db.Decimal(10, 8)
+  fechaInicio  DateTime      @db.Date
+  imagenUrl    String?
+  estado       LoanStatus    @default(activo)
+  installments Installment[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([clientId])
+  @@index([estado])
+}
+
+model Installment {
+  id               String            @id @default(uuid())
+  loanId           String
+  loan             Loan              @relation(fields: [loanId], references: [id], onDelete: Cascade)
+  nro              Int
+  fechaVencimiento DateTime          @db.Date
+  monto            Decimal           @db.Decimal(12, 2)
+  recargoAcumulado Decimal           @db.Decimal(12, 2) @default(0)
+  montoPagado      Decimal           @db.Decimal(12, 2) @default(0)
+  estado           InstallmentStatus @default(pendiente)
+  pagadaEn         DateTime?
+  payments         Payment[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  @@unique([loanId, nro])
+  @@index([estado])
+  @@index([fechaVencimiento])
+}
+
+model Payment {
+  id             String      @id @default(uuid())
+  installmentId  String
+  installment    Installment @relation(fields: [installmentId], references: [id], onDelete: Cascade)
+  monto          Decimal     @db.Decimal(12, 2)
+  recargo        Decimal     @db.Decimal(12, 2)
+  fecha          DateTime    @default(now())
+  comprobanteUrl String?
+  notas          String?
+  createdAt      DateTime    @default(now())
+}
+
+model Settings {
+  id                String   @id @default("default")
+  interesPctDefault Decimal  @db.Decimal(6, 2)
+  semanasDefault    Int      @default(4)
+  plazosPermitidos  Int[]
+  moneda            String   @default("PEN")
+  updatedAt         DateTime @updatedAt
+}

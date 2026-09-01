@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Credimax" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@color/teal_deep</item>
+        <item name="android:navigationBarColor">#F8FAFC</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

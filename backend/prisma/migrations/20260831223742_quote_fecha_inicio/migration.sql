@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Quote" ADD COLUMN     "fechaInicio" DATE NOT NULL DEFAULT CURRENT_TIMESTAMP;
