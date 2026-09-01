@@ -1,8 +1,36 @@
 # Despliegue Linux + PM2 (sin Docker)
 
-Servidor: Node **18.9.1**, código en `/proyecto/credimax/backend`. La API no usa contenedores.
+Servidor: Node en `/proyecto/Credimas/backend`. PM2 app **`node_credimax`** (ecosystem compartido, no este `ecosystem.config.cjs`).
 
-Prisma 6 recomienda Node 18.18+. En 18.9.1 suele funcionar; si `prisma generate` falla, sube a 18.20 LTS con `nvm`.
+El bloque en tu `ecosystem` debe incluir `cwd` para que encuentre `.env` y `uploads`:
+
+```js
+{
+  name: "node_credimax",
+  script: "/proyecto/Credimas/backend/dist/index.js",
+  cwd: "/proyecto/Credimas/backend",
+  env: { NODE_ENV: "production", PORT: "3700" },
+}
+```
+
+Tras cambiar el ecosystem: `pm2 delete node_credimax` y vuelve a `pm2 start` tu archivo, o `pm2 restart node_credimax --update-env`.
+
+**Obligatorio:** en el servidor no basta `.env.example`. Crea el archivo real (no se sube a git):
+
+```bash
+cd /proyecto/Credimas/backend
+cp .env.example .env
+nano .env
+```
+
+Copia `DATABASE_URL` y `JWT_SECRET` desde tu `backend/.env` local. Sin eso el login da 500.
+
+## Actualizar
+
+```bash
+bash /proyecto/Credimas/deploy.sh
+# git pull, prisma generate, migrate, build, pm2 restart node_credimax
+```
 
 ## Primera vez
 

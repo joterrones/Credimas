@@ -1,10 +1,22 @@
-/** PM2 — API Credimax en Linux (sin Docker). */
+/**
+ * Referencia. En el servidor el proceso real es `node_credimax`
+ * en el ecosystem compartido (junto a solredes, adinelsa, else).
+ *
+ * En ese archivo, el bloque Credimax debe quedar así:
+ *
+ * {
+ *   name: "node_credimax",
+ *   script: "/proyecto/Credimas/backend/dist/index.js",
+ *   cwd: "/proyecto/Credimas/backend",
+ *   env: { NODE_ENV: "production", PORT: "3700" },
+ * }
+ */
 module.exports = {
   apps: [
     {
-      name: "credimax-api",
+      name: "node_credimax",
       cwd: "/proyecto/Credimas/backend",
-      script: "dist/index.js",
+      script: "/proyecto/Credimas/backend/dist/index.js",
       instances: 1,
       exec_mode: "fork",
       autorestart: true,

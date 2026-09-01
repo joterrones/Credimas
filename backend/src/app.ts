@@ -1,3 +1,4 @@
+import { backendRoot } from "./loadEnv";
 import express from "express";
 import cors from "cors";
 import path from "path";
@@ -13,7 +14,9 @@ import { errorHandler } from "./middleware/error";
 
 export function createApp() {
   const app = express();
-  const uploadDir = path.resolve(process.env.UPLOAD_DIR ?? "uploads");
+  const uploadDir = path.isAbsolute(process.env.UPLOAD_DIR ?? "")
+    ? String(process.env.UPLOAD_DIR)
+    : path.resolve(backendRoot, process.env.UPLOAD_DIR ?? "uploads");
 
   app.use(cors());
   app.use(express.json());

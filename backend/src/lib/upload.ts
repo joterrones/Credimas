@@ -1,8 +1,11 @@
+import { backendRoot } from "../loadEnv";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-const uploadDir = path.resolve(process.env.UPLOAD_DIR ?? "uploads");
+const uploadDir = path.isAbsolute(process.env.UPLOAD_DIR ?? "")
+  ? String(process.env.UPLOAD_DIR)
+  : path.resolve(backendRoot, process.env.UPLOAD_DIR ?? "uploads");
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({

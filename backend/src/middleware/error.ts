@@ -27,6 +27,10 @@ export function errorHandler(
     });
     return;
   }
+  if (err instanceof SyntaxError) {
+    res.status(400).json({ error: "JSON inválido. Envía application/json con claves entre comillas." });
+    return;
+  }
   const detail = (() => {
     if (err instanceof Error) {
       const code = (err as { code?: string }).code;
