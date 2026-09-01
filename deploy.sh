@@ -14,7 +14,7 @@ sudo bash -c '
 
   npm run build
 
-  pm2 restart 7
+  pm2 restart 8
 '
 
 echo "Deploy terminado correctamente."
