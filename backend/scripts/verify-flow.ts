@@ -7,7 +7,7 @@ import path from "path";
 import { prisma } from "../src/lib/prisma";
 import { lateFee } from "../src/lib/lateFee";
 
-const BASE = process.env.API_URL ?? "http://localhost:3000";
+const BASE = process.env.API_URL ?? "http://localhost:3700";
 
 async function json(res: Response) {
   const text = await res.text();

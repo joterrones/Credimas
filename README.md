@@ -26,13 +26,13 @@ npx prisma db seed
 npm run dev
 ```
 
-API en `http://localhost:3000`. Usuario inicial: `admin@credimax.pe` / `admin123`.
+API en `http://localhost:3700`. Usuario inicial: `admin@credimax.pe` / `admin123`.
 
 Producción Linux + PM2 (sin Docker): [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## App Android
 
-Abre la carpeta `android/` en Android Studio. Para el emulador, la URL por defecto es `http://10.0.2.2:3000` (localhost de tu PC). En un dispositivo físico, cambia `BASE_URL` en `app/build.gradle.kts` a la IP de tu máquina en la LAN.
+Abre la carpeta `android/` en Android Studio. Para el emulador, la URL por defecto es `http://10.0.2.2:3700` (localhost de tu PC). En un dispositivo físico, cambia `BASE_URL` en `app/build.gradle.kts` a la IP de tu máquina en la LAN.
 
 ## Reglas de crédito
 

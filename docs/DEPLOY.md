@@ -53,7 +53,7 @@ Comprueba con `pm2 list` cuál id es la API (`credimax-api` o el nombre que le h
 | `DATABASE_URL` | Postgres (RDS u otro). Añade `sslmode=require` si el servidor lo exige |
 | `JWT_SECRET` | Secreto propio, no el de desarrollo |
 | `JWT_EXPIRES_IN` | Default `7d` |
-| `PORT` | Default `3000` |
+| `PORT` | `3700` |
 | `HOST` | `0.0.0.0` para escuchar en la red |
 | `UPLOAD_DIR` | Default `uploads` (ruta relativa al cwd de PM2) |
 | `APP_TZ` | Default `America/Lima` |
@@ -66,7 +66,7 @@ No commitees `.env`.
 pm2 list
 pm2 logs 0
 pm2 logs 1
-curl -s http://127.0.0.1:3000/health
+curl -s http://127.0.0.1:3700/health
 ```
 
 La app debe responder `{ "ok": true, "name": "Credimax API" }`.

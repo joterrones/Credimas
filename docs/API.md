@@ -1,6 +1,6 @@
 # API HTTP — Credimax
 
-Base URL de desarrollo: `http://localhost:3000`. JSON UTF-8 salvo el cobro (multipart). Decimales Prisma salen como `number`. Fechas ISO-8601.
+Base URL de desarrollo: `http://localhost:3700`. JSON UTF-8 salvo el cobro (multipart). Decimales Prisma salen como `number`. Fechas ISO-8601.
 
 Errores: `{ "error": "mensaje" }`. Validación Zod: `{ "error": "Datos inválidos", "details": [{ "path", "message" }] }`.
 
@@ -122,14 +122,14 @@ Definición de KPIs: [DOMAIN.md](DOMAIN.md#reportes-definiciones).
 ## Cómo probar (PowerShell)
 
 ```powershell
-Invoke-RestMethod http://localhost:3000/health
+Invoke-RestMethod http://localhost:3700/health
 
-$login = Invoke-RestMethod http://localhost:3000/auth/login -Method POST `
+$login = Invoke-RestMethod http://localhost:3700/auth/login -Method POST `
   -ContentType 'application/json' `
   -Body '{"email":"admin@credimax.pe","password":"admin123"}'
 $h = @{ Authorization = "Bearer $($login.token)" }
 
-Invoke-RestMethod http://localhost:3000/reports/dashboard -Headers $h
+Invoke-RestMethod http://localhost:3700/reports/dashboard -Headers $h
 ```
 
 Flujo automatizado (API debe estar arriba): `cd backend && npm run test:e2e`.

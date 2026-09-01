@@ -11,7 +11,7 @@ Credimax es una plataforma de **microcréditos semanales** operada por un único
 ```mermaid
 flowchart LR
   Admin[Operador Android]
-  API[Express TypeScript :3000]
+  API[Express TypeScript :3700]
   PG[(PostgreSQL)]
   Disk[uploads/]
 
@@ -45,7 +45,7 @@ No hay paquete compartido de tipos entre Android y Node. Los DTO de Kotlin en `a
 
 ### Arranque
 
-`src/index.ts` carga `dotenv` y escucha `HOST`/`PORT` (default `0.0.0.0:3000`). `createApp()` en `src/app.ts` monta CORS, JSON, estáticos de comprobantes y routers.
+`src/index.ts` carga `dotenv` y escucha `HOST`/`PORT` (default `0.0.0.0:3700`). `createApp()` en `src/app.ts` monta CORS, JSON, estáticos de comprobantes y routers.
 
 ### Capas (no hay framework tipo Nest)
 
@@ -93,7 +93,7 @@ RDS exige TLS: `?sslmode=require` en `DATABASE_URL`. El security group de AWS de
 
 - `applicationId`: `com.credimax.app`
 - minSdk 26, compile/target 35
-- `BuildConfig.BASE_URL` default `http://10.0.2.2:3000/` (emulador → localhost del host)
+- `BuildConfig.BASE_URL` default `http://10.0.2.2:3700/` (emulador → localhost del host)
 - Dispositivo físico: cambiar `BASE_URL` en `app/build.gradle.kts` a la IP LAN
 - Cleartext permitido (`network_security_config.xml`) para HTTP local
 - Token en DataStore (`TokenStore`); interceptor OkHttp agrega `Authorization`
