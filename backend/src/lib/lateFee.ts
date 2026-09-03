@@ -14,13 +14,11 @@ export function weeksLate(dueDate: Date, today: Date = new Date()): number {
   return weeks === 0 ? 1 : weeks;
 }
 
-export function lateFee(
-  montoLetra: number,
-  tasaSemanal: number,
-  dueDate: Date,
-  today: Date = new Date(),
-): number {
+/** Recargo sugerido por cada semana de atraso (PEN). El operador puede editarlo al cobrar. */
+export const RECARGO_POR_SEMANA = 10;
+
+export function lateFee(dueDate: Date, today: Date = new Date()): number {
   const w = weeksLate(dueDate, today);
   if (w <= 0) return 0;
-  return Math.round((montoLetra * tasaSemanal * w + Number.EPSILON) * 100) / 100;
+  return Math.round((RECARGO_POR_SEMANA * w + Number.EPSILON) * 100) / 100;
 }

@@ -33,9 +33,11 @@ import com.credimax.app.ui.components.EmptyText
 import com.credimax.app.ui.components.KpiTile
 import com.credimax.app.ui.components.LoadingBox
 import com.credimax.app.ui.components.StatusChip
+import com.credimax.app.ui.dueDateLabel
 import com.credimax.app.ui.loanStatusLabel
 import com.credimax.app.ui.money
-import com.credimax.app.ui.shortDate
+import com.credimax.app.ui.weeksLateNow
+import com.credimax.app.ui.weeksLateText
 import com.credimax.app.ui.theme.AmberAlert
 import com.credimax.app.ui.theme.SlateMuted
 import com.credimax.app.ui.theme.Success
@@ -102,10 +104,14 @@ fun ReportsScreen(onLoan: (String) -> Unit, onQuotesReport: () -> Unit) {
                     item { EmptyText("No hay letras atrasadas.") }
                 }
                 items(d.cobrosRetrasados, key = { it.id }) { inst ->
+                    val weeks = weeksLateText(weeksLateNow(inst.fechaVencimiento))
                     CredimaxCard(onClick = { inst.loan?.id?.let(onLoan) }) {
                         Column(Modifier.padding(16.dp)) {
                             Text(inst.loan?.client?.nombre ?: "Cliente", style = MaterialTheme.typography.titleMedium)
-                            Text("Letra ${inst.nro} · vence ${shortDate(inst.fechaVencimiento)}", color = SlateMuted)
+                            Text("Letra ${inst.nro} · ${dueDateLabel(inst.fechaVencimiento)}", color = SlateMuted)
+                            if (weeks != null) {
+                                Text(weeks, color = AmberAlert, style = MaterialTheme.typography.titleSmall)
+                            }
                             AmountRow("Adeudado", money(inst.totalAdeudado ?: (inst.monto + inst.recargoAcumulado)), emphasis = true)
                         }
                     }

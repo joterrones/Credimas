@@ -92,7 +92,7 @@ async function main() {
 
   const refreshed = await json(await fetch(`${BASE}/loans/${loan.id}`, { headers: auth }));
   const late = refreshed.installments.find((i: { nro: number }) => i.nro === 2);
-  const expected = lateFee(275, Number(refreshed.tasaSemanal), new Date(late.fechaVencimiento));
+  const expected = lateFee(new Date(late.fechaVencimiento));
   if (Number(late.recargoAcumulado) !== expected) {
     throw new Error(`recargo ${late.recargoAcumulado} != ${expected}`);
   }

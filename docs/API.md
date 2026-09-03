@@ -98,7 +98,7 @@ Filtro `estado`: `al_dia` \| `atrasado` \| `pagado` \| `activo`.
 | `fechaPago` | `YYYY-MM-DD` | No (default: hoy). No puede ser futura |
 | `recargo` | number ≥ 0 | No. Si viene, se usa tal cual. Si se omite, se calcula con `fechaPago` vs vencimiento |
 
-El recargo sugerido se calcula con `fechaPago` vs el vencimiento de la letra; el operador puede enviarlo distinto. 400 si ya está pagada, si la fecha es futura o si `recargo` no es válido. `Loan.imagenUrl` y `Payment.comprobanteUrl` son rutas `/uploads/...` o `null`.
+El recargo sugerido es **S/10 × semanas de atraso** (`fechaPago` vs vencimiento). El operador puede enviarlo distinto. 400 si ya está pagada, si la fecha es futura o si `recargo` no es válido. `Loan.imagenUrl` y `Payment.comprobanteUrl` son rutas `/uploads/...` o `null`.
 
 Respuesta 201: `{ "payment": {...}, "loan": {...} }`.
 

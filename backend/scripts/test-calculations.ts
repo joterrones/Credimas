@@ -24,11 +24,11 @@ assert(
   "vence hoy (DATE UTC vs Lima) no genera recargo",
 );
 
-const fee = lateFee(275, 0.025, due, oneWeek);
-assert(fee === 6.88, `recargo esperado 6.88 got ${fee}`);
+const fee = lateFee(due, oneWeek);
+assert(fee === 10, `recargo esperado 10 got ${fee}`);
 
 const twoWeeks = new Date("2026-09-07T00:00:00");
-const fee2 = lateFee(275, 0.025, due, twoWeeks);
-assert(fee2 === 13.75, `recargo 2 semanas esperado 13.75 got ${fee2}`);
+const fee2 = lateFee(due, twoWeeks);
+assert(fee2 === 20, `recargo 2 semanas esperado 20 got ${fee2}`);
 
 console.log("Cálculos de crédito OK");

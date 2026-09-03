@@ -67,6 +67,7 @@ import com.credimax.app.ui.components.OptionalPhotoPicker
 import com.credimax.app.ui.components.PrimaryButton
 import com.credimax.app.ui.components.rememberPhotoActions
 import com.credimax.app.ui.components.StatusChip
+import com.credimax.app.ui.dueDateLabel
 import com.credimax.app.ui.money
 import com.credimax.app.ui.parseLocalDate
 import com.credimax.app.ui.quoteStatusLabel
@@ -397,7 +398,7 @@ fun QuoteFormScreen(
                     Text("Desde ${shortDate(fechaInicio.toString())}. La letra 1 vence 7 días después.", color = SlateMuted, style = MaterialTheme.typography.bodyMedium)
                     AmountRow("Total a devolver", money(total), emphasis = true)
                     preview?.letras?.forEach { letra ->
-                        AmountRow("Letra ${letra.nro} · ${shortDate(letra.fechaVencimiento)}", money(letra.monto))
+                        AmountRow("Letra ${letra.nro} · ${dueDateLabel(letra.fechaVencimiento)}", money(letra.monto))
                     }
                     if (cap > 0 && preview == null) {
                         Text("No se pudo calcular el calendario.", color = SlateMuted)

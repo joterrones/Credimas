@@ -60,13 +60,17 @@ import com.credimax.app.ui.components.LoadingBox
 import com.credimax.app.ui.components.OptionalPhotoPicker
 import com.credimax.app.ui.components.PrimaryButton
 import com.credimax.app.ui.components.StatusChip
+import com.credimax.app.ui.dueDateLabel
 import com.credimax.app.ui.installmentStatusLabel
 import com.credimax.app.ui.lateFee
 import com.credimax.app.ui.loanStatusLabel
 import com.credimax.app.ui.money
 import com.credimax.app.ui.parseLocalDate
 import com.credimax.app.ui.shortDate
+import com.credimax.app.ui.theme.AmberAlert
 import com.credimax.app.ui.theme.SlateMuted
+import com.credimax.app.ui.weeksLateNow
+import com.credimax.app.ui.weeksLateText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -187,7 +191,12 @@ private fun InstallmentCard(inst: InstallmentDto, onPay: () -> Unit) {
                 Text("Letra ${inst.nro}", style = MaterialTheme.typography.titleMedium)
                 StatusChip(installmentStatusLabel(inst.estado), inst.estado)
             }
-            Text("Vence ${shortDate(inst.fechaVencimiento)}", color = SlateMuted)
+            Text("Vence ${dueDateLabel(inst.fechaVencimiento)}", color = SlateMuted)
+            if (unpaid) {
+                weeksLateText(weeksLateNow(inst.fechaVencimiento))?.let { weeks ->
+                    Text(weeks, color = AmberAlert, style = MaterialTheme.typography.titleSmall)
+                }
+            }
             AmountRow("Cuota", money(inst.monto))
             if (inst.recargoAcumulado > 0) AmountRow("Recargo", money(inst.recargoAcumulado))
             AmountRow(
@@ -244,7 +253,7 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
     val inst = loan?.installments?.find { it.id == installmentId }
     val due = inst?.let { parseLocalDate(it.fechaVencimiento) }
     val recargoSugerido = if (inst != null && due != null) {
-        lateFee(inst.monto, loan?.tasaSemanal ?: 0.0, due, fechaPago)
+        lateFee(due, fechaPago)
     } else {
         0.0
     }
@@ -350,7 +359,10 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
                 CredimaxCard {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text("Letra ${inst.nro} · ${loan?.client?.nombre}", style = MaterialTheme.typography.titleMedium)
-                        Text("Vence ${shortDate(inst.fechaVencimiento)}", color = SlateMuted)
+                        Text("Vence ${dueDateLabel(inst.fechaVencimiento)}", color = SlateMuted)
+                        weeksLateText(weeksLateNow(inst.fechaVencimiento))?.let { weeks ->
+                            Text(weeks, color = AmberAlert, style = MaterialTheme.typography.titleSmall)
+                        }
                         AmountRow("Cuota", money(inst.monto))
                         AmountRow("Total a cobrar", money(total), emphasis = true)
                     }
@@ -360,7 +372,7 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
                     { recargoTxt = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.take(10) },
                     "Recargo por atraso (S/)",
                     keyboardType = KeyboardType.Decimal,
-                    supportingText = "Sugerido ${money(recargoSugerido)}. Puedes editarlo.",
+                    supportingText = "S/10 por semana de atraso. Sugerido ${money(recargoSugerido)}. Puedes editarlo.",
                 )
                 OutlinedTextField(
                     value = shortDate(fechaPago.toString()),

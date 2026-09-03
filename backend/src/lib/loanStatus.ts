@@ -13,17 +13,11 @@ export async function refreshOverdue(loanId?: string): Promise<void> {
       estado: { in: UNPAID },
       ...(loanId ? { loanId } : {}),
     },
-    include: { loan: true },
   });
 
   for (const inst of installments) {
     const due = new Date(inst.fechaVencimiento);
-    const recargo = lateFee(
-      toNumber(inst.monto),
-      toNumber(inst.loan.tasaSemanal),
-      due,
-      today,
-    );
+    const recargo = lateFee(due, today);
     const overdue = recargo > 0;
     const nextStatus: InstallmentStatus = overdue ? "atrasada" : "pendiente";
 

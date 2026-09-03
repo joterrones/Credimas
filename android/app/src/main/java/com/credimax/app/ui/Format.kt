@@ -10,13 +10,23 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
 import kotlin.math.round
 
-private val pen = NumberFormat.getCurrencyInstance(Locale("es", "PE"))
-private val dayFmt = DateTimeFormatter.ofPattern("dd MMM yyyy", Locale("es", "PE"))
+private val lima = ZoneId.of("America/Lima")
+private val esPe = Locale("es", "PE")
+private val pen = NumberFormat.getCurrencyInstance(esPe)
+private val dayFmt = DateTimeFormatter.ofPattern("dd MMM yyyy", esPe)
 private val isoDate = DateTimeFormatter.ISO_LOCAL_DATE
+
+fun todayLima(): LocalDate = LocalDate.now(lima)
+
+fun weekdayEs(date: LocalDate): String {
+    val raw = date.dayOfWeek.getDisplayName(TextStyle.FULL, esPe)
+    return raw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(esPe) else it.toString() }
+}
 
 fun money(value: Double): String = pen.format(value)
 
@@ -38,16 +48,25 @@ fun parseLocalDate(iso: String): java.time.LocalDate? {
 }
 
 fun shortDate(iso: String): String {
-    return try {
-        val date = if (iso.length >= 10 && iso[4] == '-') {
-            LocalDate.parse(iso.take(10), isoDate)
-        } else {
-            Instant.parse(iso).atZone(ZoneId.systemDefault()).toLocalDate()
-        }
-        date.format(dayFmt)
-    } catch (_: Exception) {
-        iso.take(10)
-    }
+    val date = parseLocalDate(iso) ?: return iso.take(10)
+    return date.format(dayFmt)
+}
+
+/** Vencimiento de letra: "Lunes, 08 sept. 2026". */
+fun dueDateLabel(iso: String): String {
+    val date = parseLocalDate(iso) ?: return iso.take(10)
+    return "${weekdayEs(date)}, ${date.format(dayFmt)}"
+}
+
+fun weeksLateNow(dueIso: String, today: LocalDate = todayLima()): Int {
+    val due = parseLocalDate(dueIso) ?: return 0
+    return weeksLate(due, today)
+}
+
+fun weeksLateText(weeks: Int): String? = when {
+    weeks <= 0 -> null
+    weeks == 1 -> "1 semana de atraso"
+    else -> "$weeks semanas de atraso"
 }
 
 fun loanStatusLabel(estado: String) = when (estado) {
@@ -80,10 +99,12 @@ fun weeksLate(due: LocalDate, paidOn: LocalDate): Int {
     return if (weeks == 0) 1 else weeks
 }
 
-fun lateFee(montoLetra: Double, tasaSemanal: Double, due: LocalDate, paidOn: LocalDate): Double {
+const val RECARGO_POR_SEMANA = 10.0
+
+fun lateFee(due: LocalDate, paidOn: LocalDate): Double {
     val w = weeksLate(due, paidOn)
     if (w <= 0) return 0.0
-    return round((montoLetra * tasaSemanal * w + 1e-10) * 100.0) / 100.0
+    return round((RECARGO_POR_SEMANA * w + 1e-10) * 100.0) / 100.0
 }
 
 fun statusColor(estado: String) = when (estado) {

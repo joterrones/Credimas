@@ -82,7 +82,7 @@ Al pagar se **congela** `recargoAcumulado` y `montoPagado = monto + recargo`. No
 
 ## Recargo por atraso
 
-Sobre el **monto original de la letra**, no sobre recargos anteriores.
+Monto fijo: **S/10 por cada semana de atraso**, independiente del capital o de la letra. No se capitaliza sobre recargos anteriores.
 
 El **mismo día de vencimiento no genera recargo**. Las fechas de letra son solo día (sin hora); se comparan en calendario `America/Lima` para no marcar “atrasada” por el desfase UTC.
 
@@ -94,13 +94,13 @@ semanasAtraso:
     si weeks == 0 → 1     // ya venció, aunque no complete 7 días
     si no → weeks
 
-recargo = round2(montoLetra * tasaSemanal * semanasAtraso)
+recargoSugerido = 10 * semanasAtraso
 totalAPagarLetra = montoLetra + recargo
 ```
 
-Al cobrar, `fechaPago` la elige el operador (por defecto hoy; no puede ser futura). El recargo **sugerido** se calcula contra esa fecha, no contra el momento del registro. El operador puede editar el recargo al cobrar (incluso 0). Si no envía `recargo`, el servidor usa el cálculo. Así un cobro real a tiempo no genera mora si se anota días después.
+Al cobrar, `fechaPago` la elige el operador (por defecto hoy; no puede ser futura). El recargo **sugerido** se calcula contra esa fecha (S/10 por semana). El operador puede editar el recargo al cobrar (incluso 0). Si no envía `recargo`, el servidor usa el cálculo. Así un cobro real a tiempo no genera mora si se anota días después.
 
-**Ejemplo:** letra 275, tasa 0.025, 1 semana de atraso → **6.88**. Dos semanas → **13.75**.
+**Ejemplo:** 1 semana de atraso → **S/10**. Dos semanas → **S/20**.
 
 Si la letra 1 se atrasa y la 2 se paga al día, solo la 1 acumula. Cubierto en `backend/src/lib/lateFee.ts` y `scripts/test-calculations.ts`.
 

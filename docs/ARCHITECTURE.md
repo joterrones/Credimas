@@ -129,7 +129,7 @@ sequenceDiagram
 
 - Un operador. Sin app de cliente, sin asesores, sin pagos parciales de una letra.
 - Interés **flat**, no sistema francés.
-- Recargo **no se capitaliza** sobre recargos previos (solo sobre el monto original de la letra).
+- Recargo sugerido: **S/10 por semana** de atraso (fijo, no sobre el monto de la letra). Editable al cobrar.
 - Comprobantes en disco local: en un deploy multi-instancia hay que moverlos a object storage.
 - Decimales Prisma se serializan a `number` en JSON (`toJson`); Android usa `Double`.
 

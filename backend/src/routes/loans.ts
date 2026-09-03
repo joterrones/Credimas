@@ -106,13 +106,7 @@ loansRouter.post(
       throw new HttpError(400, "El recargo no es válido");
     }
     const recargo =
-      parsedRecargo ??
-      lateFee(
-        Number(installment.monto),
-        Number(loan.tasaSemanal),
-        new Date(installment.fechaVencimiento),
-        fechaPago,
-      );
+      parsedRecargo ?? lateFee(new Date(installment.fechaVencimiento), fechaPago);
     const totalDue = money(Number(installment.monto) + recargo);
     const notas = typeof req.body.notas === "string" ? req.body.notas : undefined;
     const comprobanteUrl = uploadedUrl(req.file) ?? null;
