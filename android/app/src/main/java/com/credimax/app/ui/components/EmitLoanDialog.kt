@@ -14,6 +14,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +31,11 @@ import java.time.ZoneOffset
 @Composable
 fun EmitLoanDialog(
     initialFecha: LocalDate,
+    photo: PhotoActions,
     onDismiss: () -> Unit,
     onConfirm: (fechaInicio: LocalDate, photo: Uri?) -> Unit,
 ) {
     var fechaInicio by remember(initialFecha) { mutableStateOf(initialFecha) }
-    var photoUri by remember { mutableStateOf<Uri?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
     val dateState = rememberDatePickerState(
         initialSelectedDateMillis = fechaInicio.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli(),
@@ -61,6 +62,7 @@ fun EmitLoanDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        properties = DialogProperties(dismissOnClickOutside = false, dismissOnBackPress = true),
         title = { Text("Emitir préstamo") },
         text = {
             Column(
@@ -79,15 +81,14 @@ fun EmitLoanDialog(
                     },
                 )
                 OptionalPhotoPicker(
-                    uri = photoUri,
-                    onUri = { photoUri = it },
+                    actions = photo,
                     title = "Foto del préstamo (opcional)",
                     hint = "Galería o cámara. Puedes emitir sin foto.",
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(fechaInicio, photoUri) }) { Text("Emitir") }
+            TextButton(onClick = { onConfirm(fechaInicio, photo.uri) }) { Text("Emitir") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancelar") }

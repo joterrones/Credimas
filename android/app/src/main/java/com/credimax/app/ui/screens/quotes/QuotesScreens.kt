@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -42,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -63,6 +65,7 @@ import com.credimax.app.ui.components.Field
 import com.credimax.app.ui.components.LoadingBox
 import com.credimax.app.ui.components.OptionalPhotoPicker
 import com.credimax.app.ui.components.PrimaryButton
+import com.credimax.app.ui.components.rememberPhotoActions
 import com.credimax.app.ui.components.StatusChip
 import com.credimax.app.ui.money
 import com.credimax.app.ui.parseLocalDate
@@ -85,7 +88,9 @@ fun QuotesScreen(onNew: () -> Unit, onEdit: (String) -> Unit, onLoan: (String) -
     var items by remember { mutableStateOf<List<QuoteDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
-    var confirmQuote by remember { mutableStateOf<QuoteDto?>(null) }
+    var confirmQuoteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var emitPhoto by remember { mutableStateOf<Uri?>(null) }
+    val photoActions = rememberPhotoActions(emitPhoto) { emitPhoto = it }
 
     suspend fun load() {
         loading = true
@@ -99,13 +104,19 @@ fun QuotesScreen(onNew: () -> Unit, onEdit: (String) -> Unit, onLoan: (String) -
 
     LaunchedEffect(Unit) { load() }
 
+    val confirmQuote = items.find { it.id == confirmQuoteId }
     confirmQuote?.let { quote ->
         EmitLoanDialog(
             initialFecha = parseLocalDate(quote.fechaInicio) ?: LocalDate.now(),
-            onDismiss = { confirmQuote = null },
+            photo = photoActions,
+            onDismiss = {
+                confirmQuoteId = null
+                emitPhoto = null
+            },
             onConfirm = { fecha, photo ->
                 val id = quote.id
-                confirmQuote = null
+                confirmQuoteId = null
+                emitPhoto = null
                 scope.launch {
                     try {
                         val imagen = photo?.let {
@@ -144,7 +155,7 @@ fun QuotesScreen(onNew: () -> Unit, onEdit: (String) -> Unit, onLoan: (String) -
                         Text("Capital ${money(q.capital)} · ${q.interesPct}% · ${q.semanas} semanas", color = SlateMuted)
                         AmountRow("Total a devolver", money(q.totalPagar), emphasis = true)
                         if (q.estado == "borrador" || q.estado == "aprobado") {
-                            PrimaryButton("Emitir préstamo", onClick = { confirmQuote = q })
+                            PrimaryButton("Emitir préstamo", onClick = { confirmQuoteId = q.id })
                         }
                         q.loan?.let { TextButton(onClick = { onLoan(it.id) }) { Text("Ver préstamo") } }
                     }
@@ -289,6 +300,7 @@ fun QuoteFormScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),

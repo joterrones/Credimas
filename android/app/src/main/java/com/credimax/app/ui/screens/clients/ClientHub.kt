@@ -1,5 +1,6 @@
 package com.credimax.app.ui.screens.clients
 
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,6 +32,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -46,6 +48,7 @@ import com.credimax.app.ui.components.AmountRow
 import com.credimax.app.ui.components.CredimaxCard
 import com.credimax.app.ui.components.EmitLoanDialog
 import com.credimax.app.ui.components.EmptyText
+import com.credimax.app.ui.components.rememberPhotoActions
 import com.credimax.app.ui.components.LoadingBox
 import com.credimax.app.ui.components.PrimaryButton
 import com.credimax.app.ui.components.StatusChip
@@ -128,7 +131,9 @@ fun ClientQuotesScreen(
     val scope = rememberCoroutineScope()
     var items by remember { mutableStateOf<List<QuoteDto>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
-    var confirmQuote by remember { mutableStateOf<QuoteDto?>(null) }
+    var confirmQuoteId by rememberSaveable { mutableStateOf<String?>(null) }
+    var emitPhoto by remember { mutableStateOf<Uri?>(null) }
+    val photoActions = rememberPhotoActions(emitPhoto) { emitPhoto = it }
 
     suspend fun load() {
         loading = true
@@ -138,13 +143,19 @@ fun ClientQuotesScreen(
 
     LaunchedEffect(clientId) { load() }
 
+    val confirmQuote = items.find { it.id == confirmQuoteId }
     confirmQuote?.let { quote ->
         EmitLoanDialog(
             initialFecha = parseLocalDate(quote.fechaInicio) ?: LocalDate.now(),
-            onDismiss = { confirmQuote = null },
+            photo = photoActions,
+            onDismiss = {
+                confirmQuoteId = null
+                emitPhoto = null
+            },
             onConfirm = { fecha, photo ->
                 val id = quote.id
-                confirmQuote = null
+                confirmQuoteId = null
+                emitPhoto = null
                 scope.launch {
                     try {
                         val imagen = photo?.let {
@@ -190,7 +201,7 @@ fun ClientQuotesScreen(
                             Text("${q.interesPct}% · ${q.semanas} semanas", color = SlateMuted)
                             AmountRow("Total a devolver", money(q.totalPagar), emphasis = true)
                             if (q.estado == "borrador" || q.estado == "aprobado") {
-                                PrimaryButton("Emitir préstamo", onClick = { confirmQuote = q })
+                                PrimaryButton("Emitir préstamo", onClick = { confirmQuoteId = q.id })
                             }
                             q.loan?.let { TextButton(onClick = { onLoan(it.id) }) { Text("Ver préstamo") } }
                         }

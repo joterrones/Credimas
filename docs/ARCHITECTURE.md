@@ -104,7 +104,7 @@ RDS exige TLS: `?sslmode=require` en `DATABASE_URL`. El security group de AWS de
 
 Pantallas en `ui/screens/*`. Navegación en `ui/navigation/NavGraph.kt`. Sin Hilt: `CredimaxApp.container` (`AppContainer`).
 
-Pago: galería (`GetContent`) o cámara (`TakePicture` + `FileProvider`). El monto a cobrar lo muestra la API (letra + recargo); el cliente no envía el monto, el servidor lo calcula.
+Pago: galería (`GetContent`) o cámara (`TakePicture` + `FileProvider`). La app sugiere recargo según `fechaPago` y lo envía en `recargo`; el operador puede editarlo. El servidor usa ese valor si viene, o lo calcula si se omite. Los launchers de cámara se registran en la pantalla, no dentro de `AlertDialog`.
 
 ## Flujo de datos (préstamo)
 

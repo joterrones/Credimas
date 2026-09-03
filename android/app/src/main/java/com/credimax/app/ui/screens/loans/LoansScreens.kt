@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.credimax.app.CredimaxApp
@@ -233,6 +235,7 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
     var confirm by remember { mutableStateOf(false) }
     var fechaPago by remember { mutableStateOf(LocalDate.now()) }
     var showDatePicker by remember { mutableStateOf(false) }
+    var recargoTxt by remember { mutableStateOf("") }
 
     LaunchedEffect(loanId) {
         loan = runCatching { app.container.api.loan(loanId) }.getOrNull()
@@ -240,18 +243,22 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
 
     val inst = loan?.installments?.find { it.id == installmentId }
     val due = inst?.let { parseLocalDate(it.fechaVencimiento) }
-    val recargo = if (inst != null && due != null) {
+    val recargoSugerido = if (inst != null && due != null) {
         lateFee(inst.monto, loan?.tasaSemanal ?: 0.0, due, fechaPago)
     } else {
         0.0
     }
+    LaunchedEffect(fechaPago, recargoSugerido) {
+        recargoTxt = if (recargoSugerido == 0.0) "0" else recargoSugerido.toString()
+    }
+    val recargo = recargoTxt.replace(",", ".").toDoubleOrNull()?.coerceAtLeast(0.0) ?: recargoSugerido
     val total = if (inst != null) inst.monto + recargo else 0.0
 
     if (confirm && inst != null) {
         val recargoNota = if (recargo > 0) {
-            " Incluye recargo de ${money(recargo)} porque la fecha es posterior al vencimiento."
+            " Incluye recargo de ${money(recargo)}."
         } else {
-            " Sin recargo: la fecha de pago no supera el vencimiento."
+            " Sin recargo."
         }
         AlertDialog(
             onDismissRequest = { confirm = false },
@@ -277,6 +284,7 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
                                 part,
                                 textPart(notas),
                                 textPart(fecha),
+                                textPart(recargo.toString()),
                             )
                             onDone()
                         } catch (e: HttpException) {
@@ -305,6 +313,7 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
             Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .imePadding()
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -343,23 +352,22 @@ fun PayScreen(loanId: String, installmentId: String, onDone: () -> Unit, onBack:
                         Text("Letra ${inst.nro} · ${loan?.client?.nombre}", style = MaterialTheme.typography.titleMedium)
                         Text("Vence ${shortDate(inst.fechaVencimiento)}", color = SlateMuted)
                         AmountRow("Cuota", money(inst.monto))
-                        AmountRow("Recargo por atraso", money(recargo))
                         AmountRow("Total a cobrar", money(total), emphasis = true)
-                        if (recargo == 0.0 && due != null && !fechaPago.isAfter(due)) {
-                            Text(
-                                "Sin recargo: pagó en o antes del vencimiento.",
-                                color = SlateMuted,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
                     }
                 }
+                Field(
+                    recargoTxt,
+                    { recargoTxt = it.filter { ch -> ch.isDigit() || ch == '.' || ch == ',' }.take(10) },
+                    "Recargo por atraso (S/)",
+                    keyboardType = KeyboardType.Decimal,
+                    supportingText = "Sugerido ${money(recargoSugerido)}. Puedes editarlo.",
+                )
                 OutlinedTextField(
                     value = shortDate(fechaPago.toString()),
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Fecha de pago") },
-                    supportingText = { Text("El recargo se calcula con esta fecha, no con el día de hoy.") },
+                    supportingText = { Text("Sirve de sugerencia para el recargo. Puedes editar el monto.") },
                     modifier = Modifier.fillMaxWidth(),
                     trailingIcon = {
                         TextButton(onClick = { showDatePicker = true }) { Text("Cambiar") }

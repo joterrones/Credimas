@@ -97,12 +97,22 @@ loansRouter.post(
       throw new HttpError(400, "La fecha de pago no puede ser futura");
     }
 
-    const recargo = lateFee(
-      Number(installment.monto),
-      Number(loan.tasaSemanal),
-      new Date(installment.fechaVencimiento),
-      fechaPago,
-    );
+    const rawRecargo = req.body.recargo;
+    const parsedRecargo =
+      rawRecargo !== undefined && rawRecargo !== null && String(rawRecargo).trim() !== ""
+        ? money(Number(String(rawRecargo).replace(",", ".")))
+        : undefined;
+    if (parsedRecargo !== undefined && (!Number.isFinite(parsedRecargo) || parsedRecargo < 0)) {
+      throw new HttpError(400, "El recargo no es válido");
+    }
+    const recargo =
+      parsedRecargo ??
+      lateFee(
+        Number(installment.monto),
+        Number(loan.tasaSemanal),
+        new Date(installment.fechaVencimiento),
+        fechaPago,
+      );
     const totalDue = money(Number(installment.monto) + recargo);
     const notas = typeof req.body.notas === "string" ? req.body.notas : undefined;
     const comprobanteUrl = uploadedUrl(req.file) ?? null;

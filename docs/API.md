@@ -48,7 +48,7 @@ Body de alta:
 }
 ```
 
-`tipoDocumento`: `DNI` \| `CE`. DNI: `/^\d{8}$/`. CE: `/^[A-Za-z0-9]{8,12}$/`.
+`tipoDocumento`: `DNI` \| `CE`. DNI: `/^\d{8}$/`. CE: `/^[A-Za-z0-9]{8,12}$/`. `telefono`: `/^\d{9}$/`.
 
 ## Presupuestos
 
@@ -96,8 +96,9 @@ Filtro `estado`: `al_dia` \| `atrasado` \| `pagado` \| `activo`.
 | `comprobante` | file image/* o application/pdf | No |
 | `notas` | text | No |
 | `fechaPago` | `YYYY-MM-DD` | No (default: hoy). No puede ser futura |
+| `recargo` | number ≥ 0 | No. Si viene, se usa tal cual. Si se omite, se calcula con `fechaPago` vs vencimiento |
 
-El recargo se calcula con `fechaPago` vs el vencimiento de la letra. 400 si ya está pagada o si la fecha es futura. `Loan.imagenUrl` y `Payment.comprobanteUrl` son rutas `/uploads/...` o `null`.
+El recargo sugerido se calcula con `fechaPago` vs el vencimiento de la letra; el operador puede enviarlo distinto. 400 si ya está pagada, si la fecha es futura o si `recargo` no es válido. `Loan.imagenUrl` y `Payment.comprobanteUrl` son rutas `/uploads/...` o `null`.
 
 Respuesta 201: `{ "payment": {...}, "loan": {...} }`.
 

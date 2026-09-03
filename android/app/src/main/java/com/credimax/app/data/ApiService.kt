@@ -81,6 +81,7 @@ interface ApiService {
         @Part comprobante: MultipartBody.Part?,
         @Part("notas") notas: RequestBody?,
         @Part("fechaPago") fechaPago: RequestBody?,
+        @Part("recargo") recargo: RequestBody?,
     ): PayResponse
 
     @GET("reports/dashboard")

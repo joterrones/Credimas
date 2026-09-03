@@ -30,7 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.credimax.app.ui.statusColor
 import com.credimax.app.ui.theme.SlateMuted
@@ -109,6 +111,8 @@ fun Field(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     singleLine: Boolean = true,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    supportingText: String? = null,
 ) {
     OutlinedTextField(
         value = value,
@@ -117,6 +121,8 @@ fun Field(
         modifier = modifier.fillMaxWidth(),
         enabled = enabled,
         singleLine = singleLine,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        supportingText = supportingText?.let { { Text(it) } },
         shape = RoundedCornerShape(14.dp),
     )
 }

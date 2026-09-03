@@ -6,9 +6,13 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
@@ -134,17 +138,35 @@ fun ClientFormScreen(clientId: String, onDone: () -> Unit) {
         },
     ) { padding ->
         Column(
-            Modifier.fillMaxSize().padding(padding).padding(16.dp),
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Field(nombre, { nombre = it }, "Nombre completo")
             Field(direccion, { direccion = it }, "Dirección")
-            Field(telefono, { telefono = it }, "Teléfono")
+            Field(
+                telefono,
+                { telefono = it.filter { ch -> ch.isDigit() }.take(9) },
+                "Teléfono",
+                keyboardType = KeyboardType.Phone,
+                supportingText = "9 dígitos",
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(selected = tipo == "DNI", onClick = { tipo = "DNI" }, label = { Text("DNI") })
                 FilterChip(selected = tipo == "CE", onClick = { tipo = "CE" }, label = { Text("Carné de extranjería") })
             }
-            Field(nro, { nro = it }, if (tipo == "DNI") "DNI (8 dígitos)" else "CE")
+            Field(
+                nro,
+                {
+                    nro = if (tipo == "DNI") it.filter { ch -> ch.isDigit() }.take(8) else it.filter { ch -> ch.isLetterOrDigit() }.take(12)
+                },
+                if (tipo == "DNI") "DNI (8 dígitos)" else "CE",
+                keyboardType = if (tipo == "DNI") KeyboardType.Number else KeyboardType.Ascii,
+            )
             if (error != null) Text(error!!, color = MaterialTheme.colorScheme.error)
             PrimaryButton(
                 if (clientId.isBlank()) "Guardar cliente" else "Actualizar",
@@ -153,6 +175,16 @@ fun ClientFormScreen(clientId: String, onDone: () -> Unit) {
                     scope.launch {
                         loading = true
                         error = null
+                        if (telefono.length != 9) {
+                            error = "El teléfono debe tener 9 dígitos"
+                            loading = false
+                            return@launch
+                        }
+                        if (tipo == "DNI" && nro.length != 8) {
+                            error = "El DNI debe tener 8 dígitos"
+                            loading = false
+                            return@launch
+                        }
                         val body = ClientBody(nombre.trim(), direccion.trim(), telefono.trim(), tipo, nro.trim())
                         try {
                             if (clientId.isBlank()) app.container.api.createClient(body)

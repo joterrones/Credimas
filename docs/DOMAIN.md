@@ -13,7 +13,8 @@ Identificación operativa:
 | Campo | Regla |
 |-------|--------|
 | `codigo` | Entero correlativo (`autoincrement`). Es el “número” de cliente |
-| `nombre`, `direccion`, `telefono` | Obligatorios |
+| `nombre`, `direccion` | Obligatorios |
+| `telefono` | 9 dígitos |
 | `tipoDocumento` | `DNI` o `CE` |
 | `nroDocumento` | Único. DNI: 8 dígitos. CE: 8–12 alfanumérico |
 | `estado` | `activo` \| `inactivo` |
@@ -97,7 +98,7 @@ recargo = round2(montoLetra * tasaSemanal * semanasAtraso)
 totalAPagarLetra = montoLetra + recargo
 ```
 
-Al cobrar, `fechaPago` la elige el operador (por defecto hoy; no puede ser futura). El recargo se calcula contra esa fecha, no contra el momento del registro. Así un cobro real a tiempo no genera mora si se anota días después.
+Al cobrar, `fechaPago` la elige el operador (por defecto hoy; no puede ser futura). El recargo **sugerido** se calcula contra esa fecha, no contra el momento del registro. El operador puede editar el recargo al cobrar (incluso 0). Si no envía `recargo`, el servidor usa el cálculo. Así un cobro real a tiempo no genera mora si se anota días después.
 
 **Ejemplo:** letra 275, tasa 0.025, 1 semana de atraso → **6.88**. Dos semanas → **13.75**.
 
@@ -107,7 +108,7 @@ Si la letra 1 se atrasa y la 2 se paga al día, solo la 1 acumula. Cubierto en `
 
 Registro único por letra (en la práctica: una letra no pagada acepta un `POST .../pay`).
 
-- El servidor recalcula el recargo con `fechaPago` (no confía en el monto enviado por el cliente).
+- Si el cliente envía `recargo` (≥ 0), el servidor lo aplica. Si no, lo calcula con `fechaPago`. El monto de la letra no lo envía el cliente.
 - `Payment.fecha` y `Installment.pagadaEn` guardan esa fecha de pago.
 - El comprobante (foto o PDF) es opcional.
 - Al emitir un préstamo se puede adjuntar una foto opcional (`Loan.imagenUrl`).

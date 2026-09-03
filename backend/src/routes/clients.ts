@@ -32,7 +32,7 @@ const createSchema = z
   .object({
     nombre: z.string().trim().min(2),
     direccion: z.string().trim().min(3),
-    telefono: z.string().trim().min(6),
+    telefono: z.string().trim().regex(/^\d{9}$/, "El teléfono debe tener 9 dígitos"),
     tipoDocumento: z.enum(["DNI", "CE"]),
     nroDocumento: z.string().trim().min(1),
   })
@@ -42,7 +42,7 @@ const updateSchema = z
   .object({
     nombre: z.string().trim().min(2).optional(),
     direccion: z.string().trim().min(3).optional(),
-    telefono: z.string().trim().min(6).optional(),
+    telefono: z.string().trim().regex(/^\d{9}$/, "El teléfono debe tener 9 dígitos").optional(),
     tipoDocumento: z.enum(["DNI", "CE"]).optional(),
     nroDocumento: z.string().trim().min(1).optional(),
     estado: z.enum(["activo", "inactivo"]).optional(),
