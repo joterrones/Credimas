@@ -38,6 +38,13 @@ enum InstallmentStatus {
   pagada_con_atraso
 }
 
+/** Periodicidad de las letras. No se mezcla en un mismo presupuesto/préstamo. */
+enum PaymentFrequency {
+  semanal
+  quincenal
+  mensual
+}
+
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
@@ -63,40 +70,45 @@ model Client {
 }
 
 model Quote {
-  id         String      @id @default(uuid())
-  clientId   String
-  client     Client      @relation(fields: [clientId], references: [id])
-  capital    Decimal     @db.Decimal(12, 2)
-  interesPct Decimal     @db.Decimal(6, 2)
-  semanas    Int
-  fechaInicio DateTime    @default(now()) @db.Date
-  notas      String?
-  estado     QuoteStatus @default(borrador)
-  loan       Loan?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  id          String           @id @default(uuid())
+  clientId    String
+  client      Client           @relation(fields: [clientId], references: [id])
+  capital     Decimal          @db.Decimal(12, 2)
+  interesPct  Decimal          @db.Decimal(6, 2)
+  /** Número de letras / periodos (semanas, quincenas o meses según frecuencia). */
+  semanas     Int
+  frecuencia  PaymentFrequency @default(semanal)
+  fechaInicio DateTime         @default(now()) @db.Date
+  notas       String?
+  estado      QuoteStatus      @default(borrador)
+  loan        Loan?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   @@index([clientId])
   @@index([estado])
 }
 
 model Loan {
-  id           String        @id @default(uuid())
+  id           String           @id @default(uuid())
   clientId     String
-  client       Client        @relation(fields: [clientId], references: [id])
-  quoteId      String?       @unique
-  quote        Quote?        @relation(fields: [quoteId], references: [id])
-  capital      Decimal       @db.Decimal(12, 2)
-  interesPct   Decimal       @db.Decimal(6, 2)
+  client       Client           @relation(fields: [clientId], references: [id])
+  quoteId      String?          @unique
+  quote        Quote?           @relation(fields: [quoteId], references: [id])
+  capital      Decimal          @db.Decimal(12, 2)
+  interesPct   Decimal          @db.Decimal(6, 2)
+  /** Número de letras / periodos (semanas, quincenas o meses según frecuencia). */
   semanas      Int
-  totalPagar   Decimal       @db.Decimal(12, 2)
-  tasaSemanal  Decimal       @db.Decimal(10, 8)
-  fechaInicio  DateTime      @db.Date
+  frecuencia   PaymentFrequency @default(semanal)
+  totalPagar   Decimal          @db.Decimal(12, 2)
+  /** Interés flat / nro de periodos (nombre histórico). */
+  tasaSemanal  Decimal          @db.Decimal(10, 8)
+  fechaInicio  DateTime         @db.Date
   imagenUrl    String?
-  estado       LoanStatus    @default(activo)
+  estado       LoanStatus       @default(activo)
   installments Installment[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 
   @@index([clientId])
   @@index([estado])
@@ -135,10 +147,15 @@ model Payment {
 }
 
 model Settings {
-  id                String   @id @default("default")
-  interesPctDefault Decimal  @db.Decimal(6, 2)
-  semanasDefault    Int      @default(4)
-  plazosPermitidos  Int[]
-  moneda            String   @default("PEN")
-  updatedAt         DateTime @updatedAt
+  id                   String           @id @default("default")
+  interesPctDefault    Decimal          @db.Decimal(6, 2)
+  frecuenciaDefault    PaymentFrequency @default(semanal)
+  semanasDefault       Int              @default(4)
+  plazosPermitidos     Int[]
+  quincenasDefault     Int              @default(2)
+  plazosQuincenales    Int[]            @default([2, 3, 4, 6])
+  mesesDefault         Int              @default(1)
+  plazosMensuales      Int[]            @default([1, 2, 3, 6, 12])
+  moneda               String           @default("PEN")
+  updatedAt            DateTime         @updatedAt
 }

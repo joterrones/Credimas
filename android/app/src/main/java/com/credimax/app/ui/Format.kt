@@ -1,17 +1,21 @@
 package com.credimax.app.ui
 
+import com.credimax.app.data.SettingsDto
 import com.credimax.app.ui.theme.AmberAlert
 import com.credimax.app.ui.theme.Danger
 import com.credimax.app.ui.theme.SlateMuted
 import com.credimax.app.ui.theme.Success
 import com.credimax.app.ui.theme.TealDeep
 import java.text.NumberFormat
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.round
 
@@ -19,7 +23,11 @@ private val lima = ZoneId.of("America/Lima")
 private val esPe = Locale("es", "PE")
 private val pen = NumberFormat.getCurrencyInstance(esPe)
 private val dayFmt = DateTimeFormatter.ofPattern("dd MMM yyyy", esPe)
+private val monthTitleFmt = DateTimeFormatter.ofPattern("MMMM yyyy", esPe)
 private val isoDate = DateTimeFormatter.ISO_LOCAL_DATE
+
+/** Cabeceras cortas Lun–Dom (grilla empieza en lunes). */
+val WEEKDAY_HEADERS_ES = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
 
 fun todayLima(): LocalDate = LocalDate.now(lima)
 
@@ -30,12 +38,69 @@ fun weekdayEs(date: LocalDate): String {
 
 fun money(value: Double): String = pen.format(value)
 
-fun parsePlazos(raw: String): List<Int> {
+fun parsePlazos(raw: String, max: Int = 52): List<Int> {
     return raw.split(',', ';', ' ', '\n')
         .mapNotNull { it.trim().toIntOrNull() }
-        .filter { it in 1..52 }
+        .filter { it in 1..max }
         .distinct()
         .sorted()
+}
+
+const val FREQ_SEMANAL = "semanal"
+const val FREQ_QUINCENAL = "quincenal"
+const val FREQ_MENSUAL = "mensual"
+
+/** Gson ignora defaults de Kotlin; normaliza null/vacío a semanal. */
+fun normalizeFrequency(frecuencia: String?): String = when (frecuencia?.trim()?.lowercase()) {
+    FREQ_QUINCENAL -> FREQ_QUINCENAL
+    FREQ_MENSUAL -> FREQ_MENSUAL
+    else -> FREQ_SEMANAL
+}
+
+fun maxPlazos(frecuencia: String?): Int = when (normalizeFrequency(frecuencia)) {
+    FREQ_QUINCENAL -> 26
+    FREQ_MENSUAL -> 36
+    else -> 52
+}
+
+fun frequencyLabel(frecuencia: String?): String = when (normalizeFrequency(frecuencia)) {
+    FREQ_QUINCENAL -> "Quincenal"
+    FREQ_MENSUAL -> "Mensual"
+    else -> "Semanal"
+}
+
+fun plazoUnitShort(frecuencia: String?): String = when (normalizeFrequency(frecuencia)) {
+    FREQ_QUINCENAL -> "quinc."
+    FREQ_MENSUAL -> "mes"
+    else -> "sem."
+}
+
+fun plazoLabel(frecuencia: String?, n: Int): String = when (normalizeFrequency(frecuencia)) {
+    FREQ_QUINCENAL -> if (n == 1) "1 quincena" else "$n quincenas"
+    FREQ_MENSUAL -> if (n == 1) "1 mes" else "$n meses"
+    else -> if (n == 1) "1 semana" else "$n semanas"
+}
+
+fun firstDueHint(frecuencia: String?): String = when (normalizeFrequency(frecuencia)) {
+    FREQ_QUINCENAL -> "La primera letra vence 14 días después"
+    FREQ_MENSUAL -> "La primera letra vence 1 mes después"
+    else -> "La primera letra vence 7 días después"
+}
+
+fun SettingsDto.plazosFor(frecuencia: String?): List<Int> = when (normalizeFrequency(frecuencia)) {
+    FREQ_QUINCENAL -> plazosQuincenales.orEmpty().ifEmpty { listOf(2, 3, 4, 6) }
+    FREQ_MENSUAL -> plazosMensuales.orEmpty().ifEmpty { listOf(1, 2, 3, 6, 12) }
+    else -> plazosPermitidos.orEmpty().ifEmpty { listOf(4, 6, 8, 10, 12, 16) }
+}
+
+fun SettingsDto.defaultPlazo(frecuencia: String?): Int {
+    val freq = normalizeFrequency(frecuencia)
+    val fallback = plazosFor(freq).first()
+    return when (freq) {
+        FREQ_QUINCENAL -> quincenasDefault.takeIf { it in 1..26 } ?: fallback
+        FREQ_MENSUAL -> mesesDefault.takeIf { it in 1..36 } ?: fallback
+        else -> semanasDefault.takeIf { it in 1..52 } ?: fallback
+    }
 }
 
 fun parseLocalDate(iso: String): java.time.LocalDate? {
@@ -69,6 +134,31 @@ fun weeksLateText(weeks: Int): String? = when {
     else -> "$weeks semanas de atraso"
 }
 
+fun monthTitleEs(yearMonth: YearMonth): String {
+    val raw = yearMonth.atDay(1).format(monthTitleFmt)
+    return raw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(esPe) else it.toString() }
+}
+
+/**
+ * Días visibles de la grilla mensual (Lun–Dom), incluyendo borde del mes anterior/siguiente.
+ */
+fun calendarMonthDays(yearMonth: YearMonth): List<LocalDate> {
+    val first = yearMonth.atDay(1)
+    val start = first.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val last = yearMonth.atEndOfMonth()
+    val end = last.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+    val days = mutableListOf<LocalDate>()
+    var d = start
+    while (!d.isAfter(end)) {
+        days += d
+        d = d.plusDays(1)
+    }
+    return days
+}
+
+fun isUnpaidInstallment(estado: String): Boolean =
+    estado == "pendiente" || estado == "atrasada"
+
 fun loanStatusLabel(estado: String) = when (estado) {
     "al_dia" -> "Al día"
     "atrasado" -> "Atrasado"
@@ -91,6 +181,22 @@ fun installmentStatusLabel(estado: String) = when (estado) {
     "pagada" -> "Pagada"
     "pagada_con_atraso" -> "Pagada con atraso"
     else -> estado
+}
+
+/** Etiquetas del cronograma compartible (spec 001 préstamo). */
+fun cronogramaStatusLabel(estado: String) = when (estado) {
+    "pendiente" -> "Pendiente"
+    "atrasada" -> "Con retraso"
+    "pagada" -> "Pagado"
+    "pagada_con_atraso" -> "Pagado con retraso"
+    else -> estado
+}
+
+fun cronogramaStatusDetail(estado: String, fechaVencimiento: String): String {
+    val base = cronogramaStatusLabel(estado)
+    if (estado != "atrasada") return base
+    val weeks = weeksLateText(weeksLateNow(fechaVencimiento)) ?: return base
+    return "$base ($weeks)"
 }
 
 fun weeksLate(due: LocalDate, paidOn: LocalDate): Int {

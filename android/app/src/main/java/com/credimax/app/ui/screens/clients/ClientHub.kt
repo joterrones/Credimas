@@ -52,9 +52,13 @@ import com.credimax.app.ui.components.rememberPhotoActions
 import com.credimax.app.ui.components.LoadingBox
 import com.credimax.app.ui.components.PrimaryButton
 import com.credimax.app.ui.components.StatusChip
+import com.credimax.app.ui.FREQ_MENSUAL
+import com.credimax.app.ui.FREQ_QUINCENAL
+import com.credimax.app.ui.firstDueHint
 import com.credimax.app.ui.loanStatusLabel
 import com.credimax.app.ui.money
 import com.credimax.app.ui.parseLocalDate
+import com.credimax.app.ui.plazoLabel
 import com.credimax.app.ui.quoteStatusLabel
 import com.credimax.app.ui.theme.SlateMuted
 import kotlinx.coroutines.Dispatchers
@@ -148,6 +152,11 @@ fun ClientQuotesScreen(
         EmitLoanDialog(
             initialFecha = parseLocalDate(quote.fechaInicio) ?: LocalDate.now(),
             photo = photoActions,
+            frecuenciaHint = "Se crearán ${quote.semanas} letras ${when (quote.frecuencia) {
+                FREQ_QUINCENAL -> "quincenales"
+                FREQ_MENSUAL -> "mensuales"
+                else -> "semanales"
+            }}. ${firstDueHint(quote.frecuencia)}.",
             onDismiss = {
                 confirmQuoteId = null
                 emitPhoto = null
@@ -198,7 +207,7 @@ fun ClientQuotesScreen(
                                 Text("Capital ${money(q.capital)}", style = MaterialTheme.typography.titleMedium)
                                 StatusChip(quoteStatusLabel(q.estado), q.estado)
                             }
-                            Text("${q.interesPct}% · ${q.semanas} semanas", color = SlateMuted)
+                            Text("${q.interesPct}% · ${plazoLabel(q.frecuencia, q.semanas)}", color = SlateMuted)
                             AmountRow("Total a devolver", money(q.totalPagar), emphasis = true)
                             if (q.estado == "borrador" || q.estado == "aprobado") {
                                 PrimaryButton("Emitir préstamo", onClick = { confirmQuoteId = q.id })
@@ -253,7 +262,7 @@ fun ClientLoansScreen(
                                 Text(money(loan.capital), style = MaterialTheme.typography.titleMedium)
                                 StatusChip(loanStatusLabel(loan.estado), loan.estado)
                             }
-                            Text("${loan.interesPct}% · ${loan.semanas} semanas", color = SlateMuted)
+                            Text("${loan.interesPct}% · ${plazoLabel(loan.frecuencia, loan.semanas)}", color = SlateMuted)
                             AmountRow("Total", money(loan.totalPagar), emphasis = true)
                         }
                     }

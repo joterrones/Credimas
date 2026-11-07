@@ -89,18 +89,18 @@ fun HomeScreen(
                 ) {
                     item {
                         Text("Cartera", style = MaterialTheme.typography.headlineMedium)
-                        Text("Resumen de microcréditos", color = SlateMuted)
+                        Text("Posición, mora y resultado", color = SlateMuted)
                     }
                     item {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            KpiTile("Capital", money(d.cartera.capital), TealDeep, Modifier.weight(1f))
-                            KpiTile("Montos cobrados", money(d.cartera.montosCobrados), Success, Modifier.weight(1f))
+                            KpiTile("Cartera por cobrar", money(d.cartera.cuentasPorCobrar), TealDeep, Modifier.weight(1f))
+                            KpiTile("En mora", money(d.cartera.enMora.takeIf { it > 0 } ?: d.kpis.cobrosRetrasados), AmberAlert, Modifier.weight(1f))
                         }
                     }
                     item {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            KpiTile("Cuentas por cobrar", money(d.cartera.cuentasPorCobrar), AmberAlert, Modifier.weight(1f))
-                            KpiTile("Interés", money(d.cartera.interes), Success, Modifier.weight(1f))
+                            KpiTile("Cobrado", money(d.cartera.montosCobrados), Success, Modifier.weight(1f))
+                            KpiTile("Utilidad cobrada", money(d.cartera.utilidad()), Success, Modifier.weight(1f))
                         }
                     }
                     item {

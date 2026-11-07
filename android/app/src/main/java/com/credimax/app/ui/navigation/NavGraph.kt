@@ -3,10 +3,12 @@ package com.credimax.app.ui.navigation
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -17,6 +19,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -25,12 +29,15 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.credimax.app.CredimaxApp
+import com.credimax.app.ui.screens.calendar.CalendarDayScreen
+import com.credimax.app.ui.screens.calendar.CalendarScreen
 import com.credimax.app.ui.screens.clients.ClientActionsScreen
 import com.credimax.app.ui.screens.clients.ClientFormScreen
 import com.credimax.app.ui.screens.clients.ClientLoansScreen
 import com.credimax.app.ui.screens.clients.ClientQuotesScreen
 import com.credimax.app.ui.screens.clients.ClientsScreen
 import com.credimax.app.ui.screens.home.HomeScreen
+import com.credimax.app.ui.screens.loans.LoanCronogramaScreen
 import com.credimax.app.ui.screens.loans.LoanDetailScreen
 import com.credimax.app.ui.screens.loans.LoansScreen
 import com.credimax.app.ui.screens.loans.PayScreen
@@ -48,7 +55,8 @@ data class Tab(val route: String, val label: String, val icon: androidx.compose.
 private val tabs = listOf(
     Tab("home", "Inicio", Icons.Outlined.Home),
     Tab("clients", "Clientes", Icons.Outlined.Groups),
-    Tab("loans", "Préstamos", Icons.Outlined.AccountBalanceWallet),
+    Tab("loans", "Prést.", Icons.Outlined.AccountBalanceWallet),
+    Tab("calendar", "Calend.", Icons.Outlined.CalendarMonth),
     Tab("more", "Más", Icons.Outlined.MoreHoriz),
 )
 
@@ -87,7 +95,17 @@ fun CredimaxNav() {
                                 }
                             },
                             icon = { Icon(tab.icon, contentDescription = tab.label) },
-                            label = { Text(tab.label) },
+                            label = {
+                                Text(
+                                    tab.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontSize = 10.sp,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Clip,
+                                )
+                            },
+                            alwaysShowLabel = true,
                         )
                     }
                 }
@@ -120,6 +138,21 @@ fun CredimaxNav() {
             }
             composable("loans") {
                 LoansScreen(onOpen = { nav.navigate("loan/$it") })
+            }
+            composable("calendar") {
+                CalendarScreen(onOpenDay = { date -> nav.navigate("calendar/day/${date}") })
+            }
+            composable(
+                route = "calendar/day/{date}",
+                arguments = listOf(navArgument("date") { type = NavType.StringType }),
+            ) { entry ->
+                val date = entry.arguments?.getString("date").orEmpty()
+                CalendarDayScreen(
+                    dateIso = date,
+                    onLoan = { nav.navigate("loan/$it") },
+                    onPay = { loanId, installmentId -> nav.navigate("pay/$loanId/$installmentId") },
+                    onBack = { nav.popBackStack() },
+                )
             }
             composable("more") {
                 MoreScreen(
@@ -223,6 +256,16 @@ fun CredimaxNav() {
                 LoanDetailScreen(
                     loanId = id,
                     onPay = { instId -> nav.navigate("pay/$id/$instId") },
+                    onCronograma = { nav.navigate("loan/$id/cronograma") },
+                    onBack = { nav.popBackStack() },
+                )
+            }
+            composable(
+                "loan/{id}/cronograma",
+                arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            ) { entry ->
+                LoanCronogramaScreen(
+                    loanId = entry.arguments?.getString("id").orEmpty(),
                     onBack = { nav.popBackStack() },
                 )
             }

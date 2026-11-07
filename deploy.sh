@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-cd /proyecto/Credimas/
+cd /proyecto/LanCenter/
 git pull origin master
 
 sudo bash -c '
@@ -9,7 +9,7 @@ sudo bash -c '
   [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
   nvm use 22.13.1
 
-  cd /proyecto/Credimas/backend
+  cd /proyecto/Credimas/lancenter-backend
 
   if [ ! -f .env ]; then
     cp .env.example .env
@@ -23,7 +23,7 @@ sudo bash -c '
   npx prisma migrate deploy
   npm run build
 
-  pm2 restart node_credimax
+  pm2 restart node_lancenter
 '
 
 echo "Deploy terminado correctamente."

@@ -68,17 +68,38 @@ fun ReportsScreen(onLoan: (String) -> Unit, onQuotesReport: () -> Unit) {
         ) {
             val d = dash
             if (d != null) {
-                item { Text("Cartera", style = MaterialTheme.typography.headlineMedium) }
+                item { Text("Indicadores", style = MaterialTheme.typography.headlineMedium) }
+                item {
+                    Text("Posición, mora y resultado", color = SlateMuted)
+                }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        KpiTile("Capital", money(d.cartera.capital), TealDeep, Modifier.weight(1f))
-                        KpiTile("Montos cobrados", money(d.cartera.montosCobrados), Success, Modifier.weight(1f))
+                        KpiTile("Cartera por cobrar", money(d.cartera.cuentasPorCobrar), TealDeep, Modifier.weight(1f))
+                        KpiTile("En mora", money(d.cartera.enMora.takeIf { it > 0 } ?: d.kpis.cobrosRetrasados), AmberAlert, Modifier.weight(1f))
                     }
                 }
                 item {
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        KpiTile("Cuentas por cobrar", money(d.cartera.cuentasPorCobrar), AmberAlert, Modifier.weight(1f))
-                        KpiTile("Interés", money(d.cartera.interes), Success, Modifier.weight(1f))
+                        KpiTile("Cobrado", money(d.cartera.montosCobrados), Success, Modifier.weight(1f))
+                        KpiTile("Utilidad cobrada", money(d.cartera.utilidad()), Success, Modifier.weight(1f))
+                    }
+                }
+                item {
+                    CredimaxCard {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("Detalle de cartera", style = MaterialTheme.typography.titleMedium)
+                            val par = if (d.cartera.parPct > 0) d.cartera.parPct
+                            else if (d.cartera.cuentasPorCobrar > 0) {
+                                ((d.cartera.enMora.takeIf { it > 0 } ?: d.kpis.cobrosRetrasados) / d.cartera.cuentasPorCobrar) * 100
+                            } else 0.0
+                            AmountRow("PAR % (cartera en mora)", String.format("%.1f %%", par))
+                            AmountRow("Capital en calle", money(d.cartera.capitalEnCalle))
+                            AmountRow("Desembolsado histórico", money(d.cartera.desembolsado()))
+                            AmountRow("Interés pactado", money(d.kpis.interesPactado))
+                            AmountRow("Utilidad pendiente", money(d.cartera.utilidadPendiente))
+                            AmountRow("Recargos cobrados", money(d.kpis.recargosCobrados))
+                            AmountRow("Préstamos activos", d.kpis.prestamosActivos.toString())
+                        }
                     }
                 }
                 item {

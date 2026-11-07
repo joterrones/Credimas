@@ -69,12 +69,13 @@ Body:
   "capital": 1000,
   "interesPct": 10,
   "semanas": 4,
+  "frecuencia": "semanal",
   "fechaInicio": "2026-09-01",
   "notas": "opcional"
 }
 ```
 
-`capital` > 0, `interesPct` 0–100, `semanas` entero 1–52.
+`capital` > 0, `interesPct` 0–100, `frecuencia` = `semanal` \| `quincenal` \| `mensual` (default `semanal`). `semanas` = nro de letras: 1–52 / 1–26 / 1–36 según frecuencia.
 
 ## Préstamos
 
@@ -82,7 +83,7 @@ Body:
 |--------|------|-------|
 | GET | `/loans?estado=&clientId=` | Llama `refreshOverdue`. Filtros opcionales |
 | GET | `/loans/:id` | Letras + pagos. Recalcula mora de ese préstamo |
-| POST | `/loans` | Alta directa. JSON o multipart (`imagen` opcional). Body: `clientId`, `capital`, `interesPct`, `semanas`, `fechaInicio` opcional |
+| POST | `/loans` | Alta directa. JSON o multipart (`imagen` opcional). Body: `clientId`, `capital`, `interesPct`, `semanas`, `frecuencia` opcional (default `semanal`), `fechaInicio` opcional |
 | POST | `/loans/:id/installments/:installmentId/pay` | Multipart. `comprobante` opcional |
 
 Filtro `estado`: `al_dia` \| `atrasado` \| `pagado` \| `activo`.
@@ -110,9 +111,9 @@ Respuesta 201: `{ "payment": {...}, "loan": {...} }`.
 | GET | `/reports/loans?estado=` | Cartera con `cobrado`, `pendiente`, `interesPactado`, `recargosCobrados` |
 | GET | `/reports/quotes` | Solo `borrador` y `aprobado`. KPIs `abiertos`, `capitalPotencial`, `interesProyectado`, `totalPotencial` + lista |
 | GET | `/reports/cartera` | `{ kpis: { capital, montosCobrados, cuentasPorCobrar, interes } }` |
-| GET | `/preview/installments?capital=&interesPct=&semanas=&fechaInicio=` | Calendario desde `fechaInicio` (default hoy). Letra n vence 7n días después |
+| GET | `/preview/installments?capital=&interesPct=&semanas=&frecuencia=&fechaInicio=` | Calendario desde `fechaInicio` (default hoy). Vencimientos según frecuencia |
 | GET | `/settings` | Fila `default` |
-| PUT | `/settings` | `interesPctDefault`, `semanasDefault`, `plazosPermitidos[]`, `moneda` |
+| PUT | `/settings` | `interesPctDefault`, `frecuenciaDefault`, plazos semanales / quincenales / mensuales, `moneda` |
 
 Definición de KPIs: [DOMAIN.md](DOMAIN.md#reportes-definiciones).
 

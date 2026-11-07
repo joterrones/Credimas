@@ -4,19 +4,28 @@ import { prisma } from "../lib/prisma";
 import { toJson, totalPagar } from "../lib/money";
 import { createLoanWithInstallments } from "../lib/createLoan";
 import { parseFechaInicio } from "../lib/cartera";
+import { frecuenciaSchema, maxPlazos } from "../lib/frequency";
 import { upload, uploadedUrl } from "../lib/upload";
 import { asyncHandler, HttpError } from "../middleware/error";
 
 export const quotesRouter = Router();
 
-const quoteBody = z.object({
+const quoteFields = z.object({
   clientId: z.string().uuid(),
   capital: z.number().positive(),
   interesPct: z.number().min(0).max(100),
-  semanas: z.number().int().min(1).max(52),
+  semanas: z.number().int().min(1),
+  frecuencia: frecuenciaSchema.optional(),
   fechaInicio: z.string().optional(),
   notas: z.string().optional(),
 });
+
+function assertPlazo(semanas: number, frecuencia: "semanal" | "quincenal" | "mensual") {
+  const max = maxPlazos(frecuencia);
+  if (semanas > max) {
+    throw new HttpError(400, `El plazo máximo para ${frecuencia} es ${max}`);
+  }
+}
 
 quotesRouter.get(
   "/",
@@ -62,7 +71,9 @@ quotesRouter.get(
 quotesRouter.post(
   "/",
   asyncHandler(async (req, res) => {
-    const data = quoteBody.parse(req.body);
+    const data = quoteFields.parse(req.body);
+    const frecuencia = data.frecuencia ?? "semanal";
+    assertPlazo(data.semanas, frecuencia);
     const client = await prisma.client.findUnique({ where: { id: data.clientId } });
     if (!client) throw new HttpError(404, "Cliente no encontrado");
     const quote = await prisma.quote.create({
@@ -71,6 +82,7 @@ quotesRouter.post(
         capital: data.capital,
         interesPct: data.interesPct,
         semanas: data.semanas,
+        frecuencia,
         fechaInicio: parseFechaInicio(data.fechaInicio) ?? new Date(),
         notas: data.notas,
       },
@@ -88,12 +100,15 @@ quotesRouter.post(
 quotesRouter.put(
   "/:id",
   asyncHandler(async (req, res) => {
-    const data = quoteBody.partial().parse(req.body);
+    const data = quoteFields.partial().parse(req.body);
     const quote = await prisma.quote.findUnique({ where: { id: String(req.params.id) } });
     if (!quote) throw new HttpError(404, "Presupuesto no encontrado");
     if (quote.estado === "convertido" || quote.estado === "rechazado") {
       throw new HttpError(400, "No se puede editar un presupuesto convertido o rechazado");
     }
+    const frecuencia = data.frecuencia ?? quote.frecuencia;
+    const semanas = data.semanas ?? quote.semanas;
+    assertPlazo(semanas, frecuencia);
     const { fechaInicio, ...rest } = data;
     const updated = await prisma.quote.update({
       where: { id: String(req.params.id) },
@@ -154,6 +169,7 @@ quotesRouter.post(
       capital: Number(quote.capital),
       interesPct: Number(quote.interesPct),
       semanas: quote.semanas,
+      frecuencia: quote.frecuencia,
       fechaInicio: bodyFecha ?? quote.fechaInicio,
       imagenUrl: uploadedUrl(req.file),
     });

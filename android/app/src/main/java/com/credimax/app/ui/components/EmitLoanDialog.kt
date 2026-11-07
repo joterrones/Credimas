@@ -34,6 +34,7 @@ fun EmitLoanDialog(
     photo: PhotoActions,
     onDismiss: () -> Unit,
     onConfirm: (fechaInicio: LocalDate, photo: Uri?) -> Unit,
+    frecuenciaHint: String? = null,
 ) {
     var fechaInicio by remember(initialFecha) { mutableStateOf(initialFecha) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -69,7 +70,10 @@ fun EmitLoanDialog(
                 Modifier.verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("Se crearán las letras semanales. La primera vence 7 días después de la fecha de inicio.")
+                Text(
+                    frecuenciaHint ?:
+                        "Se crearán las letras según la frecuencia del presupuesto. La primera vence un periodo después de la fecha de inicio.",
+                )
                 OutlinedTextField(
                     value = shortDate(fechaInicio.toString()),
                     onValueChange = {},

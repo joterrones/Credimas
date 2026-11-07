@@ -69,6 +69,7 @@ interface ApiService {
         @Part("capital") capital: RequestBody,
         @Part("interesPct") interesPct: RequestBody,
         @Part("semanas") semanas: RequestBody,
+        @Part("frecuencia") frecuencia: RequestBody,
         @Part("fechaInicio") fechaInicio: RequestBody?,
         @Part imagen: MultipartBody.Part?,
     ): LoanDto
@@ -98,6 +99,7 @@ interface ApiService {
         @Query("capital") capital: Double,
         @Query("interesPct") interesPct: Double,
         @Query("semanas") semanas: Int,
+        @Query("frecuencia") frecuencia: String = "semanal",
         @Query("fechaInicio") fechaInicio: String? = null,
     ): PreviewDto
 

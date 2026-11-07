@@ -27,7 +27,8 @@ Propuesta previa al desembolso. No genera obligaciones hasta convertirse.
 |-------|-------------|
 | `capital` | Monto a prestar (PEN) |
 | `interesPct` | Interés flat sobre el capital (ej. `10` = 10%) |
-| `semanas` | Plazo; presets de settings suelen ser 4, 6, 8; la API acepta 1–52 |
+| `frecuencia` | `semanal` (default) \| `quincenal` \| `mensual`. Una sola por operación; no se mezcla |
+| `semanas` | Número de letras / periodos (aunque el nombre sea histórico). Semanal 1–52, quincenal 1–26, mensual 1–36 |
 | `notas` | Opcional |
 | `estado` | `borrador` → `convertido` o `rechazado` |
 
@@ -43,8 +44,8 @@ El interés no es compuesto ni se aplica saldo decreciente.
 
 ```
 totalPagar = round2(capital * (1 + interesPct / 100))
-tasaSemanal = (interesPct / 100) / semanas     // fracción, no porcentaje
-letra_i     = round2(totalPagar / semanas)
+tasaPeriodo = (interesPct / 100) / N     // N = nro de letras; campo DB histórico tasaSemanal
+letra_i     = round2(totalPagar / N)
 letra_N     = totalPagar - suma(letra_1..letra_{N-1})   // absorbe redondeo
 ```
 
@@ -54,9 +55,17 @@ letra_N     = totalPagar - suma(letra_1..letra_{N-1})   // absorbe redondeo
 - 4 letras de **275**
 - `tasaSemanal` = 0.025
 
-Implementación: `totalPagar`, `tasaSemanalFraction`, `splitInstallments` en `backend/src/lib/money.ts`.
+Mismo split para quincenal o mensual: el interés flat se reparte en N letras; solo cambian las fechas de vencimiento.
 
-`fechaInicio` la elige el operador al crear el presupuesto o el préstamo (por defecto hoy). La letra `n` vence en `fechaInicio + 7n` días (primera letra a la semana).
+Implementación: `totalPagar`, `tasaSemanalFraction`, `splitInstallments` en `backend/src/lib/money.ts`; vencimientos en `backend/src/lib/frequency.ts`.
+
+`fechaInicio` la elige el operador (por defecto hoy). La letra `n` vence según frecuencia:
+
+| Frecuencia | Vencimiento letra `n` |
+|------------|------------------------|
+| `semanal` | `fechaInicio + 7n` días |
+| `quincenal` | `fechaInicio + 14n` días |
+| `mensual` | `fechaInicio + n` meses calendario (día clamp al fin de mes) |
 
 Estado del préstamo (derivado, no se setea a mano salvo el alta):
 
@@ -69,7 +78,7 @@ Estado del préstamo (derivado, no se setea a mano salvo el alta):
 
 ## Letra (Installment)
 
-Una obligación semanal. Cada letra acumula recargo **por su cuenta**.
+Una obligación por periodo (semana, quincena o mes). Cada letra acumula recargo **por su cuenta**.
 
 | Estado | Significado |
 |--------|-------------|
@@ -119,18 +128,30 @@ Registro único por letra (en la práctica: una letra no pagada acepta un `POST 
 Fila única `id = "default"`:
 
 - `interesPctDefault` (seed: 10)
-- `semanasDefault` (seed: 4) — plazo inicial al crear presupuesto/préstamo
-- `plazosPermitidos` (seed: `[4, 6, 8, 10, 12, 16]`) — atajos de UI; se editan como lista (ej. `4, 8, 12, 16`). El plazo real de cada operación es 1–52
+- `frecuenciaDefault` (seed: `semanal`)
+- `semanasDefault` (seed: 4) + `plazosPermitidos` (seed: `[4, 6, 8, 10, 12, 16]`) — atajos semanales (1–52)
+- `quincenasDefault` (seed: 2) + `plazosQuincenales` (seed: `[2, 3, 4, 6]`) — atajos quincenales (1–26)
+- `mesesDefault` (seed: 1) + `plazosMensuales` (seed: `[1, 2, 3, 6, 12]`) — atajos mensuales (1–36)
 - `moneda` = `PEN`
+
+En la UI solo se muestran los atajos de la frecuencia elegida (no se mezclan).
 
 ## Reporte de cartera
 
+Indicadores en `computeCartera` / `GET /reports/dashboard` → `cartera` (tras `refreshOverdue`).
+
 | Indicador | Definición |
 |-----------|------------|
-| **Capital** | Suma del dinero desembolsado (`loan.capital`) |
-| **Montos cobrados** | Suma de `montoPagado` de letras pagadas (incluye interés de la letra y recargo si hubo atraso) |
-| **Cuentas por cobrar** | Letras aún no cobradas (`monto` + recargo actual) |
-| **Interés** | Utilidad cobrada: interés de cada letra pagada + recargos cobrados (sin capital) |
+| **Cartera por cobrar** (`cuentasPorCobrar`) | Σ (`monto` + `recargoAcumulado`) de letras impagas |
+| **En mora** (`enMora`) | Igual, solo letras `atrasada` |
+| **Cobrado** (`montosCobrados`) | Σ `montoPagado` de letras pagadas |
+| **Utilidad cobrada** (`utilidadCobrada` / `interes`) | En letras pagadas: (monto − capital de la letra) + recargo |
+| **Capital en calle** (`capitalEnCalle`) | Σ capital de letras impagas (`splitInstallments`) |
+| **Desembolsado histórico** (`desembolsadoHistorico` / `capital`) | Σ `loan.capital` de todos los préstamos |
+| **Utilidad pendiente** | Interés de letras impagas (sin mora) |
+| **PAR %** (`parPct`) | `enMora / cuentasPorCobrar × 100` (0 si no hay cartera) |
+
+Inicio muestra: Cartera por cobrar, En mora, Cobrado, Utilidad cobrada. El desembolsado histórico y el capital en calle van en Reportes.
 
 ## Reportes (definiciones)
 

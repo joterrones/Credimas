@@ -33,6 +33,8 @@ data class QuoteDto(
     val capital: Double = 0.0,
     val interesPct: Double = 0.0,
     val semanas: Int = 4,
+    /** Nullable: Gson no aplica defaults de Kotlin si el campo falta en JSON. */
+    val frecuencia: String? = "semanal",
     val fechaInicio: String = "",
     val notas: String? = null,
     val estado: String = "borrador",
@@ -49,6 +51,7 @@ data class QuoteBody(
     val capital: Double,
     val interesPct: Double,
     val semanas: Int,
+    val frecuencia: String = "semanal",
     val fechaInicio: String? = null,
     val notas: String?,
 )
@@ -58,6 +61,7 @@ data class LoanBody(
     val capital: Double,
     val interesPct: Double,
     val semanas: Int,
+    val frecuencia: String = "semanal",
     val fechaInicio: String? = null,
 )
 
@@ -67,13 +71,14 @@ data class LoanDto(
     val capital: Double = 0.0,
     val interesPct: Double = 0.0,
     val semanas: Int = 0,
+    val frecuencia: String? = "semanal",
     val totalPagar: Double = 0.0,
     val tasaSemanal: Double = 0.0,
     val fechaInicio: String = "",
     val imagenUrl: String? = null,
     val estado: String = "al_dia",
     val client: ClientDto? = null,
-    val installments: List<InstallmentDto> = emptyList(),
+    val installments: List<InstallmentDto>? = emptyList(),
     val interesPactado: Double? = null,
     val cobrado: Double? = null,
     val pendiente: Double? = null,
@@ -109,15 +114,25 @@ data class PayResponse(val payment: PaymentDto?, val loan: LoanDto?)
 data class SettingsDto(
     val id: String = "default",
     val interesPctDefault: Double = 10.0,
+    val frecuenciaDefault: String? = "semanal",
     val semanasDefault: Int = 4,
-    val plazosPermitidos: List<Int> = listOf(4, 6, 8, 10, 12, 16),
+    val plazosPermitidos: List<Int>? = listOf(4, 6, 8, 10, 12, 16),
+    val quincenasDefault: Int = 2,
+    val plazosQuincenales: List<Int>? = listOf(2, 3, 4, 6),
+    val mesesDefault: Int = 1,
+    val plazosMensuales: List<Int>? = listOf(1, 2, 3, 6, 12),
     val moneda: String = "PEN",
 )
 
 data class SettingsBody(
     val interesPctDefault: Double,
+    val frecuenciaDefault: String = "semanal",
     val semanasDefault: Int,
     val plazosPermitidos: List<Int>,
+    val quincenasDefault: Int,
+    val plazosQuincenales: List<Int>,
+    val mesesDefault: Int,
+    val plazosMensuales: List<Int>,
 )
 
 data class KpisDto(
@@ -138,10 +153,19 @@ data class PrestamosPorEstado(
 
 data class CarteraDto(
     val capital: Double = 0.0,
+    val desembolsadoHistorico: Double = 0.0,
     val montosCobrados: Double = 0.0,
     val cuentasPorCobrar: Double = 0.0,
+    val enMora: Double = 0.0,
+    val capitalEnCalle: Double = 0.0,
     val interes: Double = 0.0,
-)
+    val utilidadCobrada: Double = 0.0,
+    val utilidadPendiente: Double = 0.0,
+    val parPct: Double = 0.0,
+) {
+    fun desembolsado(): Double = if (desembolsadoHistorico > 0) desembolsadoHistorico else capital
+    fun utilidad(): Double = if (utilidadCobrada > 0 || interes == 0.0) utilidadCobrada else interes
+}
 
 data class DashboardDto(
     val kpis: KpisDto = KpisDto(),

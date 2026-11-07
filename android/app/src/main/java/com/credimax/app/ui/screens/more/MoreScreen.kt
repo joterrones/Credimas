@@ -66,7 +66,7 @@ fun MoreScreen(
             CredimaxCard(onClick = onSettings) {
                 ListItem(
                     headlineContent = { Text("Configuración") },
-                    supportingContent = { Text("Interés y plazos por defecto") },
+                    supportingContent = { Text("Interés, frecuencia y plazos") },
                     leadingContent = { Icon(Icons.Outlined.Settings, null) },
                 )
             }

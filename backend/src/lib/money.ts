@@ -12,16 +12,17 @@ export function totalPagar(capital: number, interesPct: number): number {
   return money(capital * (1 + interesPct / 100));
 }
 
-export function tasaSemanalFraction(interesPct: number, semanas: number): number {
-  return interesPct / 100 / semanas;
+/** Interés flat / nro de periodos (histórico: tasaSemanal). */
+export function tasaSemanalFraction(interesPct: number, plazos: number): number {
+  return interesPct / 100 / plazos;
 }
 
-/** Split total into N weekly amounts; last installment absorbs rounding remainder. */
-export function splitInstallments(total: number, semanas: number): number[] {
-  const base = money(total / semanas);
-  const amounts = Array.from({ length: semanas }, () => base);
-  const allocated = money(base * (semanas - 1));
-  amounts[semanas - 1] = money(total - allocated);
+/** Split total into N installment amounts; last absorbs rounding remainder. */
+export function splitInstallments(total: number, plazos: number): number[] {
+  const base = money(total / plazos);
+  const amounts = Array.from({ length: plazos }, () => base);
+  const allocated = money(base * (plazos - 1));
+  amounts[plazos - 1] = money(total - allocated);
   return amounts;
 }
 

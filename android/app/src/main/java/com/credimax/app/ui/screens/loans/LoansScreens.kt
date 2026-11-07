@@ -66,6 +66,7 @@ import com.credimax.app.ui.lateFee
 import com.credimax.app.ui.loanStatusLabel
 import com.credimax.app.ui.money
 import com.credimax.app.ui.parseLocalDate
+import com.credimax.app.ui.plazoLabel
 import com.credimax.app.ui.shortDate
 import com.credimax.app.ui.theme.AmberAlert
 import com.credimax.app.ui.theme.SlateMuted
@@ -115,7 +116,7 @@ fun LoansScreen(onOpen: (String) -> Unit) {
                                 Text(loan.client?.nombre ?: "Cliente", style = MaterialTheme.typography.titleMedium)
                                 StatusChip(loanStatusLabel(loan.estado), loan.estado)
                             }
-                            Text("${money(loan.capital)} al ${loan.interesPct}% · ${loan.semanas} semanas", color = SlateMuted)
+                            Text("${money(loan.capital)} al ${loan.interesPct}% · ${plazoLabel(loan.frecuencia, loan.semanas)}", color = SlateMuted)
                             AmountRow("Total", money(loan.totalPagar), emphasis = true)
                         }
                     }
@@ -127,7 +128,7 @@ fun LoansScreen(onOpen: (String) -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoanDetailScreen(loanId: String, onPay: (String) -> Unit, onBack: () -> Unit) {
+fun LoanDetailScreen(loanId: String, onPay: (String) -> Unit, onCronograma: () -> Unit, onBack: () -> Unit) {
     val app = LocalContext.current.applicationContext as CredimaxApp
     var loan by remember { mutableStateOf<LoanDto?>(null) }
 
@@ -162,6 +163,8 @@ fun LoanDetailScreen(loanId: String, onPay: (String) -> Unit, onBack: () -> Unit
                         AmountRow("Capital", money(l.capital))
                         AmountRow("Interés", "${l.interesPct}%")
                         AmountRow("Total a devolver", money(l.totalPagar), emphasis = true)
+                        Spacer(Modifier.height(8.dp))
+                        PrimaryButton("Ver cronograma", onClick = onCronograma)
                         mediaUrl(l.imagenUrl)?.let { url ->
                             Spacer(Modifier.height(8.dp))
                             Text("Foto del préstamo", color = SlateMuted)
@@ -175,7 +178,7 @@ fun LoanDetailScreen(loanId: String, onPay: (String) -> Unit, onBack: () -> Unit
                     }
                 }
             }
-            items(l.installments, key = { it.id }) { inst ->
+            items(l.installments.orEmpty(), key = { it.id }) { inst ->
                 InstallmentCard(inst, onPay = { onPay(inst.id) })
             }
         }

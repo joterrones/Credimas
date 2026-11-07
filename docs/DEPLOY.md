@@ -99,6 +99,26 @@ curl -s http://127.0.0.1:3700/health
 
 La app debe responder `{ "ok": true, "name": "Credimax API" }`.
 
+## GitHub Actions (deploy automático)
+
+Workflow: [`.github/workflows/main.yml`](../.github/workflows/main.yml). En push a `master` (o manual) corre SSH al EC2 y ejecuta `deploy.sh`.
+
+### Error: `can't connect without a private SSH key or password`
+
+El runner **sí arrancó**, pero el secret **`SSH_PRIVATE_KEY`** está vacío o no existe en el repo. No es que se hayan “roto” las claves en el servidor: Actions no recibió ninguna clave para conectar.
+
+**Arreglo** (repo Credimax en GitHub):
+
+1. Settings → Secrets and variables → Actions → **New repository secret**
+2. Name exacto: `SSH_PRIVATE_KEY` (igual que en el workflow)
+3. Value: contenido **completo** de la clave privada PEM que usa `ubuntu` en el EC2  
+   (incluye las líneas `-----BEGIN ... PRIVATE KEY-----` y `-----END ...-----`)
+4. Guarda y vuelve a lanzar el workflow (**Actions → Run workflow** o un push a `master`)
+
+Comprueba que el secret exista en **este** repo (no solo en otro, p. ej. solredes-aws). Cada repositorio tiene sus propios secrets.
+
+Si la clave pública correspondiente no está en `~ubuntu/.ssh/authorized_keys` del EC2, el siguiente error sería `Permission denied` (ahí sí es el servidor). El error actual es solo “no hay key ni password en el Action”.
+
 ## App Android
 
 En `android/app/build.gradle.kts`, `BASE_URL` debe ser la URL pública del servidor (con `/` al final), no `10.0.2.2`.

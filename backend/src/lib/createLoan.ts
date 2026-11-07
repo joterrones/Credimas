@@ -1,4 +1,5 @@
-import { addDays, money, splitInstallments, tasaSemanalFraction, totalPagar } from "./money";
+import { dueDateForInstallment, type PaymentFrequency } from "./frequency";
+import { money, splitInstallments, startOfDay, tasaSemanalFraction, totalPagar } from "./money";
 import { prisma } from "./prisma";
 
 export type LoanInput = {
@@ -6,7 +7,9 @@ export type LoanInput = {
   quoteId?: string;
   capital: number;
   interesPct: number;
+  /** Número de letras / periodos. */
   semanas: number;
+  frecuencia?: PaymentFrequency;
   fechaInicio?: Date;
   imagenUrl?: string | null;
 };
@@ -14,11 +17,12 @@ export type LoanInput = {
 export async function createLoanWithInstallments(input: LoanInput) {
   const capital = money(input.capital);
   const interesPct = money(input.interesPct);
-  const semanas = input.semanas;
+  const plazos = input.semanas;
+  const frecuencia: PaymentFrequency = input.frecuencia ?? "semanal";
   const total = totalPagar(capital, interesPct);
-  const tasa = tasaSemanalFraction(interesPct, semanas);
-  const amounts = splitInstallments(total, semanas);
-  const fechaInicio = input.fechaInicio ?? new Date();
+  const tasa = tasaSemanalFraction(interesPct, plazos);
+  const amounts = splitInstallments(total, plazos);
+  const fechaInicio = startOfDay(input.fechaInicio ?? new Date());
 
   return prisma.loan.create({
     data: {
@@ -26,7 +30,8 @@ export async function createLoanWithInstallments(input: LoanInput) {
       quoteId: input.quoteId,
       capital,
       interesPct,
-      semanas,
+      semanas: plazos,
+      frecuencia,
       totalPagar: total,
       tasaSemanal: tasa,
       fechaInicio,
@@ -35,7 +40,7 @@ export async function createLoanWithInstallments(input: LoanInput) {
       installments: {
         create: amounts.map((monto, i) => ({
           nro: i + 1,
-          fechaVencimiento: addDays(fechaInicio, 7 * (i + 1)),
+          fechaVencimiento: dueDateForInstallment(fechaInicio, i + 1, frecuencia),
           monto,
         })),
       },

@@ -2,14 +2,22 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { toJson } from "../lib/money";
+import { frecuenciaSchema } from "../lib/frequency";
 import { asyncHandler, HttpError } from "../middleware/error";
 
 export const settingsRouter = Router();
 
+const plazosList = (max: number) => z.array(z.number().int().min(1).max(max)).min(1);
+
 const updateSchema = z.object({
   interesPctDefault: z.number().min(0).max(100).optional(),
+  frecuenciaDefault: frecuenciaSchema.optional(),
   semanasDefault: z.number().int().min(1).max(52).optional(),
-  plazosPermitidos: z.array(z.number().int().min(1).max(52)).min(1).optional(),
+  plazosPermitidos: plazosList(52).optional(),
+  quincenasDefault: z.number().int().min(1).max(26).optional(),
+  plazosQuincenales: plazosList(26).optional(),
+  mesesDefault: z.number().int().min(1).max(36).optional(),
+  plazosMensuales: plazosList(36).optional(),
   moneda: z.string().min(1).max(8).optional(),
 });
 

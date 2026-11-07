@@ -4,7 +4,7 @@ Documento para un especialista de desarrollo. Describe cómo está armado el sis
 
 ## Propósito
 
-Credimax es una plataforma de **microcréditos semanales** operada por un único administrador. No hay app para el cliente final ni multi-tenant. El operador da de alta personas, arma presupuestos, los convierte en préstamos, registra pagos con comprobante y consulta la cartera.
+Credimax es una plataforma de **microcréditos** (letras semanales, quincenales o mensuales; una frecuencia por operación) operada por un único administrador. No hay app para el cliente final ni multi-tenant. El operador da de alta personas, arma presupuestos, los convierte en préstamos, registra pagos con comprobante y consulta la cartera.
 
 ## Vista de componentes
 
@@ -98,7 +98,10 @@ RDS exige TLS: `?sslmode=require` en `DATABASE_URL`. El security group de AWS de
 - Cleartext permitido (`network_security_config.xml`) para HTTP local
 - Token en DataStore (`TokenStore`); interceptor OkHttp agrega `Authorization`
 - UI: Material 3, teal `#0F766E`, ámbar para atraso
-- Tabs: Inicio, Clientes, Préstamos, Más (presupuestos, reporte de abiertos, reportes, settings, logout)
+- Tabs: Inicio, Clientes, Préstamos, Calendario, Más (presupuestos, reporte de abiertos, reportes, settings, logout)
+- Inicio KPIs: Cartera por cobrar, En mora, Cobrado, Utilidad cobrada (`computeCartera`). Reportes añade PAR %, capital en calle, desembolsado histórico.
+- Calendario: grilla mensual Lun–Dom; solo letras `pendiente`/`atrasada` por `fechaVencimiento`; tocar un día abre la lista de letras de esa fecha (MVP sin endpoint nuevo: `GET /loans`)
+- Préstamo: detalle con **Ver cronograma** → pantalla resumida; **Compartir por WhatsApp** envía captura PNG de “Fechas de pago” + saludo (`EXTRA_TEXT`), vía FileProvider y `ACTION_SEND` al paquete WhatsApp.
 - Tocar un cliente abre un menú: editar ficha, ver/crear presupuestos, ver/crear préstamos
 - El formulario de presupuesto/préstamo pide el calendario a `GET /preview/installments` (mismas fechas que al emitir)
 

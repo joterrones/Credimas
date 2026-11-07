@@ -67,9 +67,20 @@ import com.credimax.app.ui.components.OptionalPhotoPicker
 import com.credimax.app.ui.components.PrimaryButton
 import com.credimax.app.ui.components.rememberPhotoActions
 import com.credimax.app.ui.components.StatusChip
+import com.credimax.app.ui.FREQ_MENSUAL
+import com.credimax.app.ui.FREQ_QUINCENAL
+import com.credimax.app.ui.FREQ_SEMANAL
+import com.credimax.app.ui.defaultPlazo
 import com.credimax.app.ui.dueDateLabel
+import com.credimax.app.ui.firstDueHint
+import com.credimax.app.ui.frequencyLabel
+import com.credimax.app.ui.maxPlazos
 import com.credimax.app.ui.money
+import com.credimax.app.ui.normalizeFrequency
 import com.credimax.app.ui.parseLocalDate
+import com.credimax.app.ui.plazoLabel
+import com.credimax.app.ui.plazoUnitShort
+import com.credimax.app.ui.plazosFor
 import com.credimax.app.ui.quoteStatusLabel
 import com.credimax.app.ui.shortDate
 import com.credimax.app.ui.theme.SlateMuted
@@ -110,6 +121,11 @@ fun QuotesScreen(onNew: () -> Unit, onEdit: (String) -> Unit, onLoan: (String) -
         EmitLoanDialog(
             initialFecha = parseLocalDate(quote.fechaInicio) ?: LocalDate.now(),
             photo = photoActions,
+            frecuenciaHint = "Se crearán ${quote.semanas} letras ${when (quote.frecuencia) {
+                FREQ_QUINCENAL -> "quincenales"
+                FREQ_MENSUAL -> "mensuales"
+                else -> "semanales"
+            }}. ${firstDueHint(quote.frecuencia)}.",
             onDismiss = {
                 confirmQuoteId = null
                 emitPhoto = null
@@ -153,7 +169,10 @@ fun QuotesScreen(onNew: () -> Unit, onEdit: (String) -> Unit, onLoan: (String) -
                             Text(q.client?.nombre ?: "Cliente", style = MaterialTheme.typography.titleMedium)
                             StatusChip(quoteStatusLabel(q.estado), q.estado)
                         }
-                        Text("Capital ${money(q.capital)} · ${q.interesPct}% · ${q.semanas} semanas", color = SlateMuted)
+                        Text(
+                            "Capital ${money(q.capital)} · ${q.interesPct}% · ${plazoLabel(q.frecuencia, q.semanas)}",
+                            color = SlateMuted,
+                        )
                         AmountRow("Total a devolver", money(q.totalPagar), emphasis = true)
                         if (q.estado == "borrador" || q.estado == "aprobado") {
                             PrimaryButton("Emitir préstamo", onClick = { confirmQuoteId = q.id })
@@ -184,6 +203,7 @@ fun QuoteFormScreen(
     var lockedClient by remember { mutableStateOf<ClientDto?>(null) }
     var capital by remember { mutableStateOf("") }
     var interes by remember { mutableStateOf("10") }
+    var frecuencia by remember { mutableStateOf(FREQ_SEMANAL) }
     var semanasTxt by remember { mutableStateOf("4") }
     var notas by remember { mutableStateOf("") }
     var expanded by remember { mutableStateOf(false) }
@@ -200,8 +220,10 @@ fun QuoteFormScreen(
         clients = runCatching { app.container.api.clients() }.getOrDefault(emptyList())
         settings = runCatching { app.container.api.settings() }.getOrDefault(SettingsDto())
         interes = settings.interesPctDefault.toString().trimEnd('0').trimEnd('.')
-        val defSem = if (settings.semanasDefault in 1..52) settings.semanasDefault else settings.plazosPermitidos.firstOrNull() ?: 4
-        semanasTxt = defSem.toString()
+        if (quoteId.isBlank()) {
+            frecuencia = normalizeFrequency(settings.frecuenciaDefault)
+            semanasTxt = settings.defaultPlazo(frecuencia).toString()
+        }
         if (presetClientId.isNotBlank()) {
             clientId = presetClientId
             lockedClient = runCatching { app.container.api.client(presetClientId) }.getOrNull()
@@ -211,6 +233,7 @@ fun QuoteFormScreen(
                 clientId = q.clientId
                 capital = q.capital.toString()
                 interes = q.interesPct.toString()
+                frecuencia = normalizeFrequency(q.frecuencia)
                 semanasTxt = q.semanas.toString()
                 notas = q.notas.orEmpty()
                 parseLocalDate(q.fechaInicio)?.let { fechaInicio = it }
@@ -221,12 +244,13 @@ fun QuoteFormScreen(
 
     val cap = capital.replace(",", ".").toDoubleOrNull() ?: 0.0
     val pct = interes.replace(",", ".").toDoubleOrNull() ?: 0.0
-    val semanas = semanasTxt.toIntOrNull()?.takeIf { it in 1..52 } ?: 0
+    val maxPlazo = maxPlazos(frecuencia)
+    val semanas = semanasTxt.toIntOrNull()?.takeIf { it in 1..maxPlazo } ?: 0
 
-    LaunchedEffect(cap, pct, semanas, fechaInicio) {
+    LaunchedEffect(cap, pct, semanas, frecuencia, fechaInicio) {
         preview = if (cap > 0 && semanas > 0) {
             runCatching {
-                app.container.api.previewInstallments(cap, pct, semanas, fechaInicio.toString())
+                app.container.api.previewInstallments(cap, pct, semanas, frecuencia, fechaInicio.toString())
             }.getOrNull()
         } else {
             null
@@ -239,7 +263,16 @@ fun QuoteFormScreen(
         AlertDialog(
             onDismissRequest = { confirm = false },
             title = { Text("Emitir préstamo") },
-            text = { Text("Se crearán $semanas letras desde ${shortDate(fechaInicio.toString())} (letra 1 a los 7 días).") },
+            text = {
+                val freqAdj = when (frecuencia) {
+                    FREQ_QUINCENAL -> "quincenales"
+                    FREQ_MENSUAL -> "mensuales"
+                    else -> "semanales"
+                }
+                Text(
+                    "Se crearán $semanas letras $freqAdj desde ${shortDate(fechaInicio.toString())}. ${firstDueHint(frecuencia)}.",
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     confirm = false
@@ -253,7 +286,7 @@ fun QuoteFormScreen(
                             val loan = if (quoteId.isNotBlank()) {
                                 app.container.api.updateQuote(
                                     quoteId,
-                                    QuoteBody(clientId, cap, pct, semanas, fechaInicio.toString(), notas.ifBlank { null }),
+                                    QuoteBody(clientId, cap, pct, semanas, frecuencia, fechaInicio.toString(), notas.ifBlank { null }),
                                 )
                                 app.container.api.convertQuote(quoteId, textPart(fechaInicio.toString()), imagen)
                             } else {
@@ -262,6 +295,7 @@ fun QuoteFormScreen(
                                     textPart(cap.toString()),
                                     textPart(pct.toString()),
                                     textPart(semanas.toString()),
+                                    textPart(frecuencia),
                                     textPart(fechaInicio.toString()),
                                     imagen,
                                 )
@@ -366,7 +400,7 @@ fun QuoteFormScreen(
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Fecha de inicio") },
-                supportingText = { Text("La primera letra vence 7 días después") },
+                supportingText = { Text(firstDueHint(frecuencia)) },
                 modifier = Modifier.fillMaxWidth(),
                 trailingIcon = {
                     TextButton(onClick = { showDatePicker = true }) { Text("Cambiar") }
@@ -374,14 +408,38 @@ fun QuoteFormScreen(
             )
             Field(capital, { capital = it }, "Capital (S/)")
             Field(interes, { interes = it }, "Interés %")
-            Field(semanasTxt, { semanasTxt = it.filter { ch -> ch.isDigit() }.take(2) }, "Plazo (semanas)")
-            Text("Atajos de plazo", color = SlateMuted, style = MaterialTheme.typography.bodyMedium)
+            Text("Frecuencia de pago", color = SlateMuted, style = MaterialTheme.typography.bodyMedium)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                (settings.plazosPermitidos.ifEmpty { listOf(4, 6, 8, 10, 12, 16) }).forEach { n ->
+                listOf(FREQ_SEMANAL, FREQ_QUINCENAL, FREQ_MENSUAL).forEach { freq ->
+                    FilterChip(
+                        selected = frecuencia == freq,
+                        onClick = {
+                            if (frecuencia != freq) {
+                                frecuencia = freq
+                                semanasTxt = settings.defaultPlazo(freq).toString()
+                            }
+                        },
+                        label = { Text(frequencyLabel(freq)) },
+                    )
+                }
+            }
+            val plazoFieldLabel = when (frecuencia) {
+                FREQ_QUINCENAL -> "Plazo (quincenas)"
+                FREQ_MENSUAL -> "Plazo (meses)"
+                else -> "Plazo (semanas)"
+            }
+            Field(
+                semanasTxt,
+                { semanasTxt = it.filter { ch -> ch.isDigit() }.take(2) },
+                plazoFieldLabel,
+            )
+            Text("Atajos de plazo (${frequencyLabel(frecuencia).lowercase()})", color = SlateMuted, style = MaterialTheme.typography.bodyMedium)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                settings.plazosFor(frecuencia).forEach { n ->
                     FilterChip(
                         selected = semanas == n,
                         onClick = { semanasTxt = n.toString() },
-                        label = { Text("$n sem.") },
+                        label = { Text("$n ${plazoUnitShort(frecuencia)}") },
                     )
                 }
             }
@@ -395,7 +453,11 @@ fun QuoteFormScreen(
             CredimaxCard {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text("Fechas de pago", style = MaterialTheme.typography.titleMedium)
-                    Text("Desde ${shortDate(fechaInicio.toString())}. La letra 1 vence 7 días después.", color = SlateMuted, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "Desde ${shortDate(fechaInicio.toString())}. ${firstDueHint(frecuencia)}.",
+                        color = SlateMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                     AmountRow("Total a devolver", money(total), emphasis = true)
                     preview?.letras?.forEach { letra ->
                         AmountRow("Letra ${letra.nro} · ${dueDateLabel(letra.fechaVencimiento)}", money(letra.monto))
@@ -410,12 +472,12 @@ fun QuoteFormScreen(
                 PrimaryButton(
                     "Guardar presupuesto",
                     loading = loading && !confirm,
-                    enabled = clientId.isNotBlank() && cap > 0,
+                    enabled = clientId.isNotBlank() && cap > 0 && semanas > 0,
                     onClick = {
                         scope.launch {
                             loading = true
                             error = null
-                            val body = QuoteBody(clientId, cap, pct, semanas, fechaInicio.toString(), notas.ifBlank { null })
+                            val body = QuoteBody(clientId, cap, pct, semanas, frecuencia, fechaInicio.toString(), notas.ifBlank { null })
                             try {
                                 if (quoteId.isBlank()) app.container.api.createQuote(body)
                                 else app.container.api.updateQuote(quoteId, body)
@@ -433,7 +495,7 @@ fun QuoteFormScreen(
             }
             OutlinedButton(
                 onClick = { confirm = true },
-                enabled = clientId.isNotBlank() && cap > 0 && !loading,
+                enabled = clientId.isNotBlank() && cap > 0 && semanas > 0 && !loading,
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Emitir préstamo") }
             if (asLoan && quoteId.isBlank()) {
@@ -444,7 +506,7 @@ fun QuoteFormScreen(
                             error = null
                             try {
                                 app.container.api.createQuote(
-                                    QuoteBody(clientId, cap, pct, semanas, fechaInicio.toString(), notas.ifBlank { null }),
+                                    QuoteBody(clientId, cap, pct, semanas, frecuencia, fechaInicio.toString(), notas.ifBlank { null }),
                                 )
                                 onDone()
                             } catch (e: HttpException) {
@@ -456,7 +518,7 @@ fun QuoteFormScreen(
                             }
                         }
                     },
-                    enabled = clientId.isNotBlank() && cap > 0 && !loading,
+                    enabled = clientId.isNotBlank() && cap > 0 && semanas > 0 && !loading,
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Guardar solo como presupuesto") }
             }

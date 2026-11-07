@@ -36,6 +36,7 @@ import com.credimax.app.ui.components.KpiTile
 import com.credimax.app.ui.components.LoadingBox
 import com.credimax.app.ui.components.StatusChip
 import com.credimax.app.ui.money
+import com.credimax.app.ui.plazoLabel
 import com.credimax.app.ui.quoteStatusLabel
 import com.credimax.app.ui.theme.SlateMuted
 import com.credimax.app.ui.theme.TealDeep
@@ -94,7 +95,7 @@ fun QuotesReportScreen(onQuote: (String) -> Unit, onBack: () -> Unit) {
                                     Text(q.client?.nombre ?: "Cliente", style = MaterialTheme.typography.titleMedium)
                                     StatusChip(quoteStatusLabel(q.estado), q.estado)
                                 }
-                                Text("${money(q.capital)} · ${q.interesPct}% · ${q.semanas} sem.", color = SlateMuted)
+                                Text("${money(q.capital)} · ${q.interesPct}% · ${plazoLabel(q.frecuencia, q.semanas)}", color = SlateMuted)
                                 AmountRow("Potencial", money(q.totalPagar), emphasis = true)
                             }
                         }

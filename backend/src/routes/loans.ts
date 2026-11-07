@@ -6,6 +6,7 @@ import { createLoanWithInstallments } from "../lib/createLoan";
 import { refreshLoanStatus, refreshOverdue } from "../lib/loanStatus";
 import { lateFee } from "../lib/lateFee";
 import { parseFechaInicio } from "../lib/cartera";
+import { frecuenciaSchema, maxPlazos } from "../lib/frequency";
 import { upload, uploadedUrl } from "../lib/upload";
 import { asyncHandler, HttpError } from "../middleware/error";
 
@@ -15,7 +16,8 @@ const createLoanSchema = z.object({
   clientId: z.string().uuid(),
   capital: z.coerce.number().positive(),
   interesPct: z.coerce.number().min(0).max(100),
-  semanas: z.coerce.number().int().min(1).max(52),
+  semanas: z.coerce.number().int().min(1),
+  frecuencia: frecuenciaSchema.optional(),
   fechaInicio: z.string().optional(),
 });
 
@@ -65,10 +67,16 @@ loansRouter.post(
   upload.single("imagen"),
   asyncHandler(async (req, res) => {
     const data = createLoanSchema.parse(req.body);
+    const frecuencia = data.frecuencia ?? "semanal";
+    const max = maxPlazos(frecuencia);
+    if (data.semanas > max) {
+      throw new HttpError(400, `El plazo máximo para ${frecuencia} es ${max}`);
+    }
     const client = await prisma.client.findUnique({ where: { id: data.clientId } });
     if (!client) throw new HttpError(404, "Cliente no encontrado");
     const loan = await createLoanWithInstallments({
       ...data,
+      frecuencia,
       fechaInicio: parseFechaInicio(data.fechaInicio),
       imagenUrl: uploadedUrl(req.file),
     });

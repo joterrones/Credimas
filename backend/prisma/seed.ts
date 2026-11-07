@@ -22,8 +22,13 @@ async function main() {
     create: {
       id: "default",
       interesPctDefault: 10,
+      frecuenciaDefault: "semanal",
       semanasDefault: 4,
       plazosPermitidos: [4, 6, 8, 10, 12, 16],
+      quincenasDefault: 2,
+      plazosQuincenales: [2, 3, 4, 6],
+      mesesDefault: 1,
+      plazosMensuales: [1, 2, 3, 6, 12],
       moneda: "PEN",
     },
   });
